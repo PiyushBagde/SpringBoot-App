@@ -1,0 +1,30 @@
+/.metadata/
+
+# Ignore Maven and Gradle build files
+target/
+*.jar
+*.war
+*.ear
+
+# Ignore IDE-specific files (Spring Tool Suite, IntelliJ, Eclipse, VS Code)
+.idea/
+.vscode/
+*.iml
+.classpath
+.project
+.settings/
+
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+# Ignore logs and temp files
+logs/
+*.log
+hs_err_pid*
+
+# Ignore environment and credentials
+.env
+
+# Ignore dependency folders
+node_modules/
