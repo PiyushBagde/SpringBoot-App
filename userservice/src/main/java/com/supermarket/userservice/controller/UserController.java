@@ -14,12 +14,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.supermarket.userservice.model.Role;
 import com.supermarket.userservice.model.User;
-import com.supermarket.userservice.service.MyUserDetailsService;
+import com.supermarket.userservice.service.UserService;
 
 @RestController
 public class UserController {
 	@Autowired
-	private MyUserDetailsService service;
+	private UserService service;
 
 	@GetMapping("/")
 	public String home() {
@@ -27,9 +27,9 @@ public class UserController {
 	}
 	
 	@PostMapping("/register")
-	public String createUser(@RequestBody User user) {
-		service.createUser(user);
-		return user.getName() + " user created successfully.";
+	public User createUser(@RequestBody User user) {
+		return service.register(user);
+		
 	}
 
 	@GetMapping("/getUser/{id}")
@@ -50,9 +50,9 @@ public class UserController {
 	}
 
 	@PutMapping("/updateUseremail/{id}")
-	public String updateUsername(@PathVariable int id, @RequestBody User user) {
-		service.updateUserEmail(id,user);
-		return "Email update successfully";
+	public User updateUsername(@PathVariable int id, @RequestBody User user) {
+		return service.updateUserEmail(id,user);
+		
 	}
 	
 	@PutMapping("/updateRole/{id}")
