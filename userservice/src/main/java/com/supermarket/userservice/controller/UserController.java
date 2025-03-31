@@ -14,14 +14,19 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.supermarket.userservice.model.Role;
 import com.supermarket.userservice.model.User;
-import com.supermarket.userservice.service.UserService;
+import com.supermarket.userservice.service.MyUserDetailsService;
 
 @RestController
 public class UserController {
 	@Autowired
-	private UserService service;
+	private MyUserDetailsService service;
 
-	@PostMapping("/addUser")
+	@GetMapping("/")
+	public String home() {
+		return "hellowe";
+	}
+	
+	@PostMapping("/register")
 	public String createUser(@RequestBody User user) {
 		service.createUser(user);
 		return user.getName() + " user created successfully.";
