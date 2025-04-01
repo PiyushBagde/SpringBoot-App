@@ -21,9 +21,9 @@ public class UserController {
 	@Autowired
 	private UserService service;
 
-	@GetMapping("/")
-	public String home() {
-		return "hellowe";
+	@PostMapping("/login")
+	public String login(@RequestBody User user) {
+		return service.verify(user);
 	}
 	
 	@PostMapping("/register")
