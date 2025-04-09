@@ -31,3 +31,33 @@ build/
 
 ### VS Code ###
 .vscode/
+
+#  Build & Package Files
+target/
+*.jar
+*.war
+*.ear
+
+
+# IDE Specific Files
+.idea/
+.settings/
+.metadata/
+
+
+#  Logs, Errors, and Temp Files
+logs/
+*.log
+hs_err_pid*
+
+# System Files
+.DS_Store
+Thumbs.db
+
+#  Environment and Credentials
+.env
+
+# Maven Wrapper
+.mvn/
+!mvnw
+!mvnw.cmd

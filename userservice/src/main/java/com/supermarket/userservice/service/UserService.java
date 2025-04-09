@@ -8,13 +8,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.supermarket.userservice.ResourceNotFoundException;
+import com.supermarket.userservice.exception.ResourceNotFoundException;
 import com.supermarket.userservice.model.Role;
 import com.supermarket.userservice.model.User;
 import com.supermarket.userservice.repository.UserRepository;
+import com.supermarket.userservice.security.JWTService;
 
 @Service
 public class UserService {
@@ -33,6 +35,7 @@ public class UserService {
 	// create new user
 	public User register(User user) {
 		user.setPassword(encoder.encode(user.getPassword()));
+		user.setRole(Role.CUSTOMER);
 		return userRepository.save(user);
 	}
 
@@ -45,7 +48,7 @@ public class UserService {
 		return user.get();
 	}
 
-	// get all all user details
+	// get all user details
 	public List<User> getAllUser() {
 		List<User> usersList = new ArrayList<>();
 		Iterable<User> iterable = userRepository.findAll();
@@ -90,17 +93,21 @@ public class UserService {
 
 		return userRepository.save(user);
 	}
-
 	public String verify(User user) {
-		// TODO Auto-generated method stub
-		Authentication authentication = authManager
-				.authenticate(new UsernamePasswordAuthenticationToken(user.getEmail(), user.getPassword()));
+		Authentication authentication = authManager.authenticate(
+				new UsernamePasswordAuthenticationToken(user.getEmail(), user.getPassword()));
 
 		if (authentication.isAuthenticated()) {
+			System.out.println("** user email: " + user.getEmail());
+			System.out.println("** called verify() from service");
+
+			// ✅This will now include role in token
 			return jwtService.generateToken(user.getEmail());
 		}
 
+		System.out.println("** auth failed in userservice");
 		return "auth fail";
 	}
+
 
 }

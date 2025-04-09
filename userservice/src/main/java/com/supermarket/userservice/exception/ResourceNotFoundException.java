@@ -1,4 +1,4 @@
-package com.supermarket.userservice;
+package com.supermarket.userservice.exception;
 
 public class ResourceNotFoundException extends RuntimeException{
 	
