@@ -42,12 +42,15 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
         }
 
         String username = jwtUtil.extractUsername(token);
+
         String role = jwtUtil.extractRole(token);
         String fullRole = "ROLE_" + role;
+        int userId = jwtUtil.extractUserId(token);
         ServerHttpRequest modifiedRequest = exchange.getRequest()
                 .mutate()
                 .header("X-Authenticated_User", username)
                 .header("X-Role", role)
+                .header("X-UserId", String.valueOf(userId))
                 .build();
         System.out.println("** Token validated. User: " + username + ", Role: " + fullRole);
         return chain

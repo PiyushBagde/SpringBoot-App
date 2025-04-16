@@ -43,4 +43,9 @@ public class JWTUtil {
         Claims claims = extractClaims(token);
         return claims.get("role", String.class);
     }
+
+    public int extractUserId(String token) {
+        Claims claims = extractClaims(token);
+        return claims.get("userId", Integer.class);
+    }
 }
