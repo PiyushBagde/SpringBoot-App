@@ -26,8 +26,10 @@ public class JWTService {
     @Autowired
     private ApplicationContext context;
 
-    public String generateToken(String username) {
+    public String generateToken(String username, int userId) {
         Map<String, Object> claims = new HashMap<>();
+
+        System.out.println("** userid in JWTService: " + userId);
 
         UserDetails userDetails = context.getBean(MyUserDetailsService.class).loadUserByUsername(username);
         String role = userDetails.getAuthorities()
@@ -36,6 +38,7 @@ public class JWTService {
                 .map(GrantedAuthority::getAuthority)
                 .orElse("CUSTOMER");
         claims.put("role", role);
+        claims.put("userId", userId);
         System.out.println("** Role in Token " + role);
         System.out.println("** generate token function called");
         return Jwts.builder()
@@ -71,6 +74,10 @@ public class JWTService {
     public String extractRole(String token) {
         Claims claims = extractClaims(token);
         return claims.get("role", String.class);
+    }
+
+    public int extractUserId(String token) {
+        return extractClaims(token).get("userId", Integer.class);
     }
 
 }
