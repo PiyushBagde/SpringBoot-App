@@ -1,15 +1,15 @@
 package com.supermarket.paymentservice.repository;
 
-import java.util.List;
-
+import com.supermarket.paymentservice.model.Transaction;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import com.supermarket.paymentservice.model.Transaction;
+import java.util.List;
+import java.util.Optional;
 
 @Repository
-public interface TransactionRepository extends JpaRepository<Transaction, Integer>{
-	List<Transaction> findByUserId(int userId);
+public interface TransactionRepository extends JpaRepository<Transaction, Integer> {
+    List<Transaction> findAllByUserId(int userId);
 
-	Transaction findByOrderId(int orderId);
+    Optional<Transaction> findByTransactionIdAndUserId(int transactionId, int userId);
 }

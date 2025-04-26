@@ -3,10 +3,10 @@ package com.supermarket.cartservice.service;
 import java.util.List;
 import java.util.Optional;
 
+import com.supermarket.cartservice.dto.ProductResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.supermarket.cartservice.dto.ProductResponse;
 import com.supermarket.cartservice.feign.InventoryServiceClient;
 import com.supermarket.cartservice.model.Cart;
 import com.supermarket.cartservice.model.CartItems;
@@ -23,6 +23,7 @@ public class CartService {
 	@Autowired
 	private CartItemsRepository cartItemsRepository;
 
+	@Autowired
 	private InventoryServiceClient inventoryServiceClient;
 	
 	
@@ -46,9 +47,18 @@ public class CartService {
 	
 	
 	
-	public Cart addToCart(int userId, int prodId, int quantity) {
-		ProductResponse product = inventoryServiceClient.getProductById(prodId);
-		String prodName = product.getProdName();
+	/**
+	 * Adds a product to the user's cart. If the cart does not yet exist for the user,
+	 * a new cart is created. The method calculates the total price for the product based
+	 * on the quantity and updates the cart's total price accordingly.
+	 *
+	 * @param userId The ID of the user for whom the cart needs to be updated.
+	 * @param prodName The name of the product to be added to the cart.
+	 * @param quantity The quantity of the product to be added to the cart.
+	 */
+	public void addToCart(int userId, String prodName, int quantity) {
+		ProductResponse product = inventoryServiceClient.getProductByProdName(prodName);
+		int prodId = product.getProdId();
 		double prodPrice = product.getPrice();
 		double totalPrice = prodPrice * quantity;
 		
@@ -56,7 +66,7 @@ public class CartService {
 		Cart newCart;
 
 		CartItems item = new CartItems();
-		if(!cart.isPresent()) {
+		if(cart.isEmpty()) {
 			Cart emptyCart = new Cart();
 			emptyCart.setUserId(userId);
 			emptyCart.setCartTotalPrice(0.0);
@@ -77,20 +87,18 @@ public class CartService {
 		double cartTotal = increasePrice(newCart.getCartTotalPrice(), totalPrice);
 		newCart.setCartTotalPrice(cartTotal);
 		cartRepository.save(newCart);
-        return newCart;
 	}
-	
-	
-	
+
 	public Cart getCartByUserId(int userId){
-		return cartRepository.findByUserId(userId).orElseThrow(() -> new RuntimeException("No cart available for given userId")); //.orElseThrow(() -> new RuntimeException("Cart not found"));
+		return cartRepository.findByUserId(userId).orElseThrow(() -> new RuntimeException("No cart available for given userId"));
 	}
 	
 	//increase quantity
-	public void increaseQuantity(int cartId, int prodId) {
-		Cart cart = cartRepository.findById(cartId).orElseThrow(() -> new RuntimeException("Cart not found."));
+	public void increaseQuantity(int userId, String prodName) {
+		Cart cart = cartRepository.findByUserId(userId).orElseThrow(() -> new RuntimeException("Cart not found."));
+
 		for(CartItems item :cart.getItems()) {
-			if(item.getProdId() == prodId) {
+			if(item.getProdName().equalsIgnoreCase(prodName)) {
 				item.setQuantity(item.getQuantity() + 1);
 				double totalPrice = item.getTotalPrice() + item.getPrice();
 				double updatedPrice = increasePrice(cart.getCartTotalPrice(), totalPrice);
@@ -102,10 +110,10 @@ public class CartService {
 	}
 	
 	// decrease quantity
-	public void decreaseQuantity(int cartId, int prodId) {
-		Cart cart = cartRepository.findById(cartId).orElseThrow(() -> new RuntimeException("Cart not found."));
+	public void decreaseQuantity(int userId, String prodName) {
+		Cart cart = cartRepository.findByUserId(userId).orElseThrow(() -> new RuntimeException("Cart not found."));
 		for(CartItems item :cart.getItems()) {
-			if(item.getProdId() == prodId) {
+			if(item.getProdName().equalsIgnoreCase(prodName)) {
 				item.setQuantity(item.getQuantity() - 1);
 				double totalPrice = item.getTotalPrice() - item.getPrice();
 				double updatedPrice = decreasePrice(cart.getCartTotalPrice(), totalPrice);
@@ -117,9 +125,9 @@ public class CartService {
 	}
 
 	@Transactional
-	public CartItems removeItemFromCart(int userId, int prodId) {
+	public CartItems removeItemFromCart(int userId, String prodName) {
         Cart cart = getCartByUserId(userId);
-        CartItems item = cartItemsRepository.findByCartCartIdAndProdId(cart.getCartId(), prodId);
+        CartItems item = cartItemsRepository.findByCartCartIdAndProdName(cart.getCartId(), prodName).orElseThrow(() -> new RuntimeException("Cart item not found in cart for user: " + userId));
         double updatedPrice = decreasePrice(cart.getCartTotalPrice(), item.getTotalPrice());
         cart.setCartTotalPrice(updatedPrice);
         cart.getItems().remove(item);

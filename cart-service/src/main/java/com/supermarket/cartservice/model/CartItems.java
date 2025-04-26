@@ -1,106 +1,99 @@
 package com.supermarket.cartservice.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
+import lombok.*;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-
+@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Entity
 @Table(name = "cart_items")
 
 public class CartItems {
-	
-	@Id
-	@Column(name = "cart_item_id")
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private int cartItemId;
-	
-	@ManyToOne
-	@JoinColumn(name = "cart_id",nullable = false)
-	@JsonIgnore
-	private Cart cart;
 
-	@Column(name = "product_id")
-	private int prodId;
-	
-	@Column(name = "product_name")
-	private String prodName;
-	
-	@Column(name = "price")
-	private double price;
-	
-	@Column(name = "quantity")
-	private int quantity;
-	
-	@Column(name = "total_price")
-	private double totalPrice;
+    @Id
+    @Column(name = "cart_item_id")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private int cartItemId;
 
-	public int getCartItemId() {
-		return cartItemId;
-	}
+    @ManyToOne
+    @JoinColumn(name = "cart_id", nullable = false)
+    @JsonIgnore
+    private Cart cart;
 
-	public void setCartItemId(int cartItemId) {
-		this.cartItemId = cartItemId;
-	}
+    @Column(name = "product_id")
+    private int prodId;
 
-	public Cart getCart() {
-		return cart;
-	}
+    @Column(name = "product_name")
+    private String prodName;
 
-	public void setCart(Cart cart) {
-		this.cart = cart;
-	}
+    @Column(name = "price")
+    private double price;
 
-	public int getProdId() {
-		return prodId;
-	}
+    @Column(name = "quantity")
+    private int quantity;
 
-	public void setProdId(int prodId) {
-		this.prodId = prodId;
-	}
+    @Column(name = "total_price")
+    private double totalPrice;
 
-	public String getProdName() {
-		return prodName;
-	}
 
-	public void setProdName(String prodName) {
-		this.prodName = prodName;
-	}
+    public int getCartItemId() {
+        return cartItemId;
+    }
 
-	public double getPrice() {
-		return price;
-	}
+    public void setCartItemId(int cartItemId) {
+        this.cartItemId = cartItemId;
+    }
 
-	public void setPrice(double price) {
-		this.price = price;
-	}
+    public Cart getCart() {
+        return cart;
+    }
 
-	public int getQuantity() {
-		return quantity;
-	}
+    public void setCart(Cart cart) {
+        this.cart = cart;
+    }
 
-	public void setQuantity(int quantity) {
-		this.quantity = quantity;
-	}
+    public int getProdId() {
+        return prodId;
+    }
 
-	public double getTotalPrice() {
-		return totalPrice;
-	}
+    public void setProdId(int prodId) {
+        this.prodId = prodId;
+    }
 
-	public void setTotalPrice(double totalPrice) {
-		this.totalPrice = totalPrice;
-	}
-	
-	
-	
-	
-		
-	
-	
+    public String getProdName() {
+        return prodName;
+    }
+
+    public void setProdName(String prodName) {
+        this.prodName = prodName;
+    }
+
+    public double getPrice() {
+        return price;
+    }
+
+    public void setPrice(double price) {
+        this.price = price;
+    }
+
+    public int getQuantity() {
+        return quantity;
+    }
+
+    public void setQuantity(int quantity) {
+        this.quantity = quantity;
+    }
+
+    public double getTotalPrice() {
+        return totalPrice;
+    }
+
+    public void setTotalPrice(double totalPrice) {
+        this.totalPrice = totalPrice;
+    }
+
 }

@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.supermarket.billingservice.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -13,6 +14,7 @@ import com.supermarket.billingservice.model.Order;
 import com.supermarket.billingservice.model.OrderItems;
 import com.supermarket.billingservice.repository.OrderRepository;
 import com.supermarket.billingservice.repository.OrderitemsRepository;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class OrderService {
@@ -63,6 +65,8 @@ public class OrderService {
 		
 		orderitemsRepository.saveAll(orderItemList);
 		savedOrder.setOrderItems(orderItemList);
+
+		cartServiceClient.clearCart(userId);
 	    return order;
 	}
 	
@@ -73,12 +77,16 @@ public class OrderService {
 	public Order getOrderByOrderId(int orderId){
 		return orderRepository.findById(orderId).orElseThrow(()-> new RuntimeException("Order Id not found."));
 	}
-	
-//	public void cancelOrder(int orderId) {
-//		
-//	}
+
 	
 	public List<Order> getAllOrders(){
 		return orderRepository.findAll();
+	}
+
+	@Transactional
+	public void deleteOrder(int userId, int orderId) {
+		Order order = orderRepository.findByOrderIdAndUserId(orderId, userId).orElseThrow(()-> new ResourceNotFoundException("Order with id " + orderId + " not found for user with id " + userId + "."));
+		orderitemsRepository.deleteAllByOrder(order);
+		orderRepository.deleteById(orderId);
 	}
 }

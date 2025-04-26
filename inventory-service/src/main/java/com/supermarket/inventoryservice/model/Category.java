@@ -1,61 +1,57 @@
 package com.supermarket.inventoryservice.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.util.ArrayList;
 import java.util.List;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
-
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Entity
 @Table(name = "product_category")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"}) // ignore proxy objects
 public class Category {
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "category_id")
-	private int categoryId;
-	
-	@Column(name = "category_name", nullable = false, unique = true)
-	private String categoryName;
-	
-	@OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
-	@JsonIgnore
-	private List<Product> products = new ArrayList<>();
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "category_id")
+    private int categoryId;
 
-	public int getCategoryId() {
-		return categoryId;
-	}
+    @Column(name = "category_name", nullable = false, unique = true)
+    private String categoryName;
 
-	public void setCategoryId(int categoryId) {
-		this.categoryId = categoryId;
-	}
+    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    private List<Product> products = new ArrayList<>();
 
-	public String getCategoryName() {
-		return categoryName;
-	}
 
-	public void setCategoryName(String categoryName) {
-		this.categoryName = categoryName;
-	}
+    public int getCategoryId() {
+        return categoryId;
+    }
 
-	public List<Product> getProducts() {
-		return products;
-	}
+    public void setCategoryId(int categoryId) {
+        this.categoryId = categoryId;
+    }
 
-	public void setProducts(List<Product> products) {
-		this.products = products;
-	}
-	
-	
-	
+    public String getCategoryName() {
+        return categoryName;
+    }
+
+    public void setCategoryName(String categoryName) {
+        this.categoryName = categoryName;
+    }
+
+    public List<Product> getProducts() {
+        return products;
+    }
+
+    public void setProducts(List<Product> products) {
+        this.products = products;
+    }
 }

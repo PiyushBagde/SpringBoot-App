@@ -3,6 +3,7 @@ package com.supermarket.billingservice.feign;
 import java.util.List;
 
 import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
@@ -17,6 +18,7 @@ public interface CartServiceClient {
 	@GetMapping("/cart/getCartIdByUserId/{userId}")
 	public int getCartIdByUserId(@PathVariable int userId);
 
-	// share her above function and delete comment
+	@DeleteMapping("/cart/clearCart/{userId}")
+	public String clearCart(@PathVariable int userId);
 
 }

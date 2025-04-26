@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class UserService {
@@ -33,18 +32,18 @@ public class UserService {
     // create new user
     public User register(User user) {
         user.setPassword(encoder.encode(user.getPassword()));
-        user.setRole(Role.CUSTOMER);
+        user.setRole(Role.CUSTOMER); // set default role as CUSTOMER
         return userRepository.save(user);
     }
 
-    public User getUserById(int id) {
-        Optional<User> user = userRepository.findById(id);
-        if (!user.isPresent()) {
-            throw new ResourceNotFoundException("usernot found");
-        }
-
-        return user.get();
-    }
+//    public User getUserById(int id) {
+//        Optional<User> user = userRepository.findById(id);
+//        if (!user.isPresent()) {
+//            throw new ResourceNotFoundException("user not found");
+//        }
+//
+//        return user.get();
+//    }
 
     // get all user details
     public List<User> getAllUser() {
@@ -56,43 +55,36 @@ public class UserService {
     }
 
     // update user mail using id
-    public User updateUserEmail(int id, User updatedUser) {
-        Optional<User> existinguser = userRepository.findById(id);
-
-        if (!existinguser.isPresent()) {
-            throw new ResourceNotFoundException("not found");
-        }
-
-        User user = existinguser.get();
-
-        user.setEmail(updatedUser.getEmail());
-        return userRepository.save(user);
-    }
+//    public User updateUserEmail(int id, User updatedUser) {
+//        Optional<User> existing-user = userRepository.findById(id);
+//
+//        if (!existing-user.isPresent()) {
+//            throw new ResourceNotFoundException("not found");
+//        }
+//
+//        User user = existing-user.get();
+//
+//        user.setEmail(updatedUser.getEmail());
+//        return userRepository.save(user);
+//    }
 
     // delete user by id
     public void deleteUserById(int id) throws Exception {
         if (!userRepository.existsById(id)) {
-            throw new Exception("fdas");
+            throw new Exception("User not found");
         }
         userRepository.deleteById(id);
     }
 
     // update user role(access to admin only)
     public User updateUserRole(int id, Role newRole) {
-        Optional<User> existinguser = userRepository.findById(id);
-
-        if (!existinguser.isPresent()) {
-            throw new ResourceNotFoundException("not found");
-        }
-
-        User user = existinguser.get();
-
+        User user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
         user.setRole(newRole);
-
         return userRepository.save(user);
     }
 
     public String verify(User user) {
+        System.out.println("verify is running");
         Authentication authentication = authManager.authenticate(
                 new UsernamePasswordAuthenticationToken(user.getEmail(), user.getPassword()));
 

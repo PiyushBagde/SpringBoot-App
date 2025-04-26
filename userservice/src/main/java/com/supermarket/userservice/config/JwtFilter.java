@@ -25,10 +25,13 @@ public class JwtFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
+        System.out.println("JwtFilter is running");
         String authHeader = request.getHeader("Authorization");
+        System.out.println("**authheader: "+authHeader);
         String token = null;
         String username = null;
         String role = null;
+        System.out.println("extracted role in jwt filter" + role);
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             token = authHeader.substring(7);

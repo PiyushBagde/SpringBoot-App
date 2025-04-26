@@ -1,77 +1,99 @@
 package com.supermarket.cartservice.controller;
 
-import org.springframework.http.HttpHeaders;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.server.reactive.ServerHttpRequest;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ServerWebExchange;
-
 import com.supermarket.cartservice.model.Cart;
-import com.supermarket.cartservice.model.CartItems;
 import com.supermarket.cartservice.service.CartService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/cart")
 public class CartController {
 
-	@Autowired
-	private CartService cartService;
-	
-	@PostMapping("/add")
-	public String addToCart(@RequestParam int userId, @RequestParam int prodId, @RequestParam int quantity) {
-		// TODO check when user tries to add same product again
-		cartService.addToCart(userId, prodId, quantity);
-		return "Product with product id " + prodId + " added to cart " + userId;
-	}
+    @Autowired
+    private CartService cartService;
 
-	@GetMapping("/getCartIdByUserId/{userId}")
-	public int getCartIdByUserId(@PathVariable int userId) {
-		return cartService.getCartIdByUserId(userId);
-	}
-
-//	 route for logged user
-	@GetMapping("/getMyCart")
-	public Cart getMyCart(@RequestHeader("X-UserId") int userId) {
-		System.out.println("**getCartByUser userId = " + userId);
-		return cartService.getMyCart(userId);
-	}
-	
-
-	@GetMapping("/getCartByUser/{userId}")
-	public Cart getCartByUser(@PathVariable int userId) {
-
-		return cartService.getCartByUserId(userId);
-	}
-	
-	@PutMapping("/increaseQuantity")
-	public String increaseQuantity(@RequestParam int cartId, @RequestParam int prodId) {
-		cartService.increaseQuantity(cartId, prodId);
-		return "Increased item quantity by one";
-	}
-	
-	@PutMapping("/decreaseQuantity")
-	public String decreaseQuantity(@RequestParam int cartId, @RequestParam int prodId) {
-		cartService.decreaseQuantity(cartId, prodId);
-		return "Decreased item quantity by one";
-	}
-		
-	@DeleteMapping("/remove")
-    public CartItems removeFromCart(@RequestParam int userId, @RequestParam int prodId) {
-        return cartService.removeItemFromCart(userId, prodId);
-        // return "Item removed from cart";
+    // routes for customer
+    @PostMapping("/biller/addToCart")
+    public String addToCart(@RequestParam int userId, @RequestParam String prodName, @RequestParam int quantity) {
+        // TODO check when user tries to add same product again
+        System.out.println("Adding cart to user " + userId + " product " + prodName);
+        cartService.addToCart(userId, prodName, quantity);
+        return prodName + " added to cart of userId" + userId;
     }
-	
-	@DeleteMapping("/clearCart/{userId}")
-	public String clearCart(@PathVariable int userId) {
-		cartService.clearCart(userId);
-		return "Cart cleared successfully.";
-	}
-	
-	@DeleteMapping("/deleteCart/{cartId}")
-	public String deleteCart(@PathVariable int cartId) {
-		cartService.deleteCart(cartId);
-		return "Cart deleted sucessfully";
-	}
-	
+
+    @DeleteMapping("/biller/removeItemFromCart")
+    public String removeItemFromCart(@RequestParam int userId, @RequestParam String prodName) {
+        cartService.removeItemFromCart(userId, prodName);
+        return "product removed from cart of userId" + userId + "successfully";
+    }
+
+    @PostMapping("/customer/addToMyCart")
+    public String addToMyCart(@RequestHeader("X-UserId") int userId, @RequestParam String prodName, @RequestParam int quantity) {
+        cartService.addToCart(userId, prodName, quantity);
+        return "Product with product name " + prodName + " added to cart wiht userId " + userId;
+    }
+
+    @GetMapping("/customer/getMyCart") //	 route for logged user
+    public Cart getMyCart(@RequestHeader("X-UserId") int userId) {
+        System.out.println("**getCartByUser userId = " + userId);
+        return cartService.getMyCart(userId);
+    }
+
+
+    @DeleteMapping("/customer/removeItemFromMyCart")
+    public String removeFromMyCart(@RequestHeader("X-UserId") int userId, @RequestParam String prodName) {
+        cartService.removeItemFromCart(userId, prodName);
+        return "Item removed from cart successfully.";
+    }
+
+
+    @GetMapping("/biller/getCartByUser/{userId}")
+    public Cart getCartByUser(@PathVariable int userId) {
+
+        return cartService.getCartByUserId(userId);
+    }
+
+    @PutMapping("/customer/increaseQuantity")
+    public String increaseQuantity(@RequestHeader("X-UserId") int userId, @RequestParam String prodName) {
+        cartService.increaseQuantity(userId, prodName);
+        return "Increased item quantity by one";
+    }
+
+    @PutMapping("/customer/decreaseQuantity")
+    public String decreaseQuantity(@RequestHeader("X-UserId") int userId, @RequestParam String prodName) {
+        cartService.decreaseQuantity(userId, prodName);
+        return "Decreased item quantity by one";
+    }
+
+    @PutMapping("/biller/increaseQuantity")
+    public String increaseQuantityFromUserCart(@RequestParam int userId, @RequestParam String prodName) {
+        cartService.increaseQuantity(userId, prodName);
+        return "Increased item quantity by one";
+    }
+
+    @PutMapping("/biller/decreaseQuantity")
+    public String decreaseQuantityFromUserCart(@RequestParam int userId, @RequestParam String prodName) {
+        cartService.decreaseQuantity(userId, prodName);
+        return "Decreased item quantity by one";
+    }
+
+
+    @DeleteMapping("/clearCart/{userId}")
+    public String clearCart(@PathVariable int userId) {
+        cartService.clearCart(userId);
+        return "Cart cleared successfully.";
+    }
+
+    @DeleteMapping("/deleteCart/{cartId}")
+    public String deleteCart(@PathVariable int cartId) {
+        cartService.deleteCart(cartId);
+        return "Cart deleted sucessfully";
+    }
+
+
+    @GetMapping("/getCartIdByUserId/{userId}")
+    public int getCartIdByUserId(@PathVariable int userId) {
+        return cartService.getCartIdByUserId(userId);
+    }
+
 }
