@@ -22,6 +22,8 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
+        String path = request.getURI().getPath();
+        System.out.println("** path: " + path);
 
         if (request.getURI().getPath().startsWith("/user/login") ||
                 request.getURI().getPath().startsWith("/user/register")) {
@@ -44,15 +46,21 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
         String username = jwtUtil.extractUsername(token);
 
         String role = jwtUtil.extractRole(token);
-        String fullRole = "ROLE_" + role;
+        System.out.println("** extracted role: " + role);
         int userId = jwtUtil.extractUserId(token);
+
+        if(!isAuthourized(path, role)) {
+            return forbidden(exchange);
+        }
+        System.out.println("** path and role validated");
+
         ServerHttpRequest modifiedRequest = exchange.getRequest()
                 .mutate()
                 .header("X-Authenticated_User", username)
                 .header("X-Role", role)
                 .header("X-UserId", String.valueOf(userId))
                 .build();
-        System.out.println("** Token validated. User: " + username + ", Role: " + fullRole);
+        System.out.println("** Token validated. User: " + username + ", Role: " + role);
         return chain
                 .filter(exchange
                         .mutate()
@@ -60,7 +68,114 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
                         .build());
     }
 
+
+    private boolean isAuthourized(String path, String role) {
+        System.out.println("** In isauthourized path: " + path + ", role: " + role);
+        System.out.println("** isAuthourized activated");
+
+        // route access for admin-biller-customer
+        if (path.startsWith("/bill/admin-biller-customer") && (role.equals("ADMIN") || role.equals("BILLER") || role.equals("CUSTOMER"))) {
+            return true;
+        }
+
+        // route access for admin-biller
+        if (path.startsWith("/bill/admin-biller") && (role.equals("ADMIN") || role.equals("BILLER"))) {
+            System.out.println("** failed by 9th");
+            return true;
+        }
+        // route access for admin-customer
+        if (path.startsWith("/invent/admin-customer") && (role.equals("ADMIN") || role.equals("CUSTOMER"))) {
+            System.out.println("** failed by 10th");
+            return true;
+        }
+
+        if (path.startsWith("/bill/admin-customer") && (role.equals("ADMIN") || role.equals("CUSTOMER"))) {
+            return true;
+        }
+
+        // route access for biller-customer
+        if (path.startsWith("/invent/biller-customer") && (role.equals("BILLER") || role.equals("CUSTOMER"))) {
+            System.out.println("** failed by 11th");
+            return true;
+        }
+        if (path.startsWith("/cart/biller-customer") && (role.equals("BILLER") || role.equals("CUSTOMER"))){
+            System.out.println("** failed by 12th");
+            return true;
+        }
+        if (path.startsWith("/bill/biller-customer") && (role.equals("BILLER") || role.equals("CUSTOMER"))) {
+            System.out.println("** failed by 13th");
+            return true;
+        }
+        if (path.startsWith("/payment/biller-customer") && (role.equals("BILLER") || role.equals("CUSTOMER"))) {
+            System.out.println("** failed by 14th");
+            return true;
+        }
+
+        // route access for admin only
+        if (path.startsWith("/user/admin") && role.equals("ADMIN")) {
+            System.out.println("** failed by 1st");
+            return true;
+        }
+        if (path.startsWith("/invent/admin") && role.equals("ADMIN")) {
+            System.out.println("** failed by 2nd");
+            return true;
+        }
+        if (path.startsWith("/bill/admin") && role.equals("ADMIN")) {
+            System.out.println("** failed by 3rd");
+            return true;
+        }
+        if (path.startsWith("/payment/admin") && role.equals("ADMIN")) {
+            System.out.println("** failed by 4th");
+            return true;
+        }
+        if (path.startsWith("/cart/admin") && role.equals("ADMIN")) {
+            System.out.println("** failed by 5th");
+            return true;
+        }
+
+        // route access for biller
+        if (path.startsWith("/invent/biller") && role.equals("BILLER")) {
+            System.out.println("** failed by 6th");
+            return true;
+        }
+        if (path.startsWith("/cart/biller") && role.equals("BILLER"))  {
+            System.out.println("** failed by 7th");
+            return true;
+        }
+
+        if (path.startsWith("/bill/biller") && role.equals("BILLER"))  {
+            return true;
+        }
+
+        // route access for customer
+        if (path.startsWith("/cart/customer") && role.equals("CUSTOMER"))  {
+            System.out.println("** failed by 8th");
+            return true;
+        }
+
+        if (path.startsWith("/invent/customer") && role.equals("CUSTOMER"))  {
+            return true;
+        }
+
+        if (path.startsWith("/bill/customer") && role.equals("CUSTOMER"))  {
+            return true;
+        }
+        if(path.startsWith("/payment/customer") && role.equals("CUSTOMER")) {
+            return true;
+        }
+
+
+        return false;
+    }
+
+    private Mono<Void> forbidden(ServerWebExchange exchange) {
+        System.out.println("** forbidden activated");
+        exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
+        return exchange.getResponse().setComplete();
+    }
+
     private Mono<Void> unauthorized(ServerWebExchange exchange) {
+        System.out.println("** unauthorized activated");
         exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
         return exchange.getResponse().setComplete();
     }
@@ -70,4 +185,3 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
         return -1;
     }
 }
-
