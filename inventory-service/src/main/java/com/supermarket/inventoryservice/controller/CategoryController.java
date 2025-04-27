@@ -1,5 +1,6 @@
 package com.supermarket.inventoryservice.controller;
 
+import com.supermarket.inventoryservice.exception.ResourceAlreadyExistsException;
 import com.supermarket.inventoryservice.model.Category;
 import com.supermarket.inventoryservice.service.CategoryService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,9 +18,9 @@ public class CategoryController {
 
     // routes for admin
     @PostMapping("/admin/addCategory")
-    public String addCategory(@RequestBody Category category) {
-        categoryService.addCategory(category);
-        return "Category added successfully";
+    public String addCategory(@RequestBody Category category) throws ResourceAlreadyExistsException {
+        Category addedCategory =  categoryService.addCategory(category);
+        return addedCategory.getCategoryName() +" Category added successfully";
     }
 
     @GetMapping("/admin/getAllCategory")

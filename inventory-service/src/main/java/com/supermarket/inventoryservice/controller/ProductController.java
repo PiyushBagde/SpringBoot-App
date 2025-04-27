@@ -1,5 +1,6 @@
 package com.supermarket.inventoryservice.controller;
 
+import com.supermarket.inventoryservice.exception.ResourceAlreadyExistsException;
 import com.supermarket.inventoryservice.model.Category;
 import com.supermarket.inventoryservice.model.Product;
 import com.supermarket.inventoryservice.service.ProductService;
@@ -17,9 +18,9 @@ public class ProductController {
 
     // routes for admin
     @PostMapping("/admin/addProduct") //give category id while specifying category in body
-    public String addProduct(@RequestBody Product product) {
-        productService.addProduct(product);
-        return "Product added successfully";
+    public String addProduct(@RequestBody Product product) throws ResourceAlreadyExistsException {
+        Product addedProduct = productService.addProduct(product);
+        return addedProduct.getProdName() + " added successfully";
     }
 
     @PutMapping("/admin/updateProduct/{prod_id}")
@@ -28,9 +29,9 @@ public class ProductController {
 
     }
 
-    @DeleteMapping("/admin/deleteProduct/{prod_id}")
-    public String deleteProd(@PathVariable int prod_id) {
-        productService.deleteProd(prod_id);
+    @DeleteMapping("/admin/deleteProduct/{prodId}")
+    public String deleteProd(@PathVariable int prodId) {
+        productService.deleteProd(prodId);
         return "Product deleted successfully";
     }
 

@@ -1,12 +1,17 @@
 package com.supermarket.inventoryservice.service;
 
+import com.supermarket.inventoryservice.exception.InsufficientStockException;
+import com.supermarket.inventoryservice.exception.OperationFailedException;
+import com.supermarket.inventoryservice.exception.ResourceAlreadyExistsException;
 import com.supermarket.inventoryservice.exception.ResourceNotFoundException;
 import com.supermarket.inventoryservice.model.Category;
 import com.supermarket.inventoryservice.model.Product;
 import com.supermarket.inventoryservice.repository.CategoryRepository;
 import com.supermarket.inventoryservice.repository.ProductRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -19,75 +24,132 @@ public class ProductService {
     @Autowired
     private CategoryRepository categoryRepository;
 
-    public void addProduct(Product product) {
+    public Product addProduct(Product product) throws ResourceAlreadyExistsException {
         Category category = categoryRepository.findByCategoryName(product.getCategory().getCategoryName())
-                .orElseThrow(() -> new ResourceNotFoundException("Category not found with name: " + product.getCategory().getCategoryName()));
+                .orElseThrow(() -> new ResourceNotFoundException("Cannot add product. Category not found with name: " + product.getCategory().getCategoryName()));
         product.setCategory(category);
-        productRepository.save(product);
+
+        if (productRepository.findByProdName(product.getProdName()).isPresent()) {
+                 throw new ResourceAlreadyExistsException("Product with name '" + product.getProdName() + "' already exists.");
+             }
+
+        try {
+            return productRepository.save(product);
+        } catch (DataAccessException e) {
+            throw new OperationFailedException("Failed to add product: " + product.getProdName());
+        } catch (Exception e) {
+            throw new OperationFailedException("An unexpected error occurred while adding product: " + product.getProdName());
+        }
     }
 
-    public Product getProductById(int id) {
-        return productRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
+    public Product getProductById(int productId) {
+        return productRepository.findById(productId).orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + productId));
     }
 
     public List<Product> getAllProducts() {
-        return productRepository.findAll();
+        List<Product> products = productRepository.findAll();
+         if (products.isEmpty()) {
+             throw new ResourceNotFoundException("No products found in the database.");
+         }
+        return products;
     }
 
     public List<Product> getProductsByCategoryId(int categoryId) {
-        Category category = categoryRepository.findById(categoryId).orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + categoryId));
-        return productRepository.findByCategory(category);
+        Category category = categoryRepository.findById(categoryId).orElseThrow(() -> new ResourceNotFoundException("Cannot get products. Category not found with id: " + categoryId));
+        List<Product> products = productRepository.findByCategory(category);
+         if (products.isEmpty()) {
+            throw new ResourceNotFoundException("No products found for category id: " + categoryId);
+         }
+        return products;
 
     }
 
     public void reduceStock(int prodId, int quantity) {
-        Product product = productRepository.findById(prodId).orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + prodId));
-        if (product.getStock() < quantity) {
-            throw new ResourceNotFoundException("Not enough stock available");
+        if (quantity <= 0) { // Add check for non-positive quantity
+            throw new IllegalArgumentException("Quantity to reduce must be positive.");
         }
+        Product product = productRepository.findById(prodId).orElseThrow(() -> new ResourceNotFoundException("Cannot reduce stock. Product not found with id: " + prodId));
+
+        if (product.getStock() < quantity) {
+            throw new InsufficientStockException("Not enough stock available for product '" + product.getProdName() + "' (ID: " + prodId + "). Available: " + product.getStock() + ", Requested: " + quantity);
+        }
+
         product.setStock(product.getStock() - quantity);
-        productRepository.save(product);
+
+        try {
+            productRepository.save(product);
+        } catch (DataAccessException e) {
+            throw new OperationFailedException("Failed to update stock for product ID: " + prodId);
+        } catch (Exception e) {
+            throw new OperationFailedException("An unexpected error occurred while updating stock for product ID: " + prodId);
+        }
     }
 
+    @Transactional
     public Product updateProduct(int prod_id, Product updatedproduct) {
-        Product existingProduct = productRepository.findById(prod_id).orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + prod_id));
+        Product existingProduct = productRepository.findById(prod_id).orElseThrow(() -> new ResourceNotFoundException("Cannot update. Product not found with id: " + prod_id));
+
+        if (updatedproduct.getPrice() < 0) throw new IllegalArgumentException("Price cannot be negative.");
+        if (updatedproduct.getStock() < 0) throw new IllegalArgumentException("Stock level cannot be negative.");
+        if(updatedproduct.getProdName() == null) throw new IllegalArgumentException("Product name cannot be null.");
 
         existingProduct.setProdName(updatedproduct.getProdName());
         existingProduct.setPrice(updatedproduct.getPrice());
         existingProduct.setStock(updatedproduct.getStock());
-        if (updatedproduct.getCategory() != null) {
+        if (updatedproduct.getCategory() != null && updatedproduct.getCategory().getCategoryName() != null) {
             String categoryName = updatedproduct.getCategory().getCategoryName();
-            Category category = categoryRepository.findByCategoryName(categoryName)
-                    .orElseThrow(() -> new ResourceNotFoundException("Category not found: " + categoryName));
+            Category category = categoryRepository.findByCategoryName(categoryName).orElseThrow(() -> new ResourceNotFoundException("Cannot update product. Category not found: " + categoryName));
             existingProduct.setCategory(category);
         }
-        return productRepository.save(existingProduct);
+        try {
+            return productRepository.save(existingProduct);
+        } catch (DataAccessException e) {
+            throw new OperationFailedException("Failed to update product with ID: " + prod_id);
+        } catch (Exception e) {
+            throw new OperationFailedException("An unexpected error occurred while updating product with ID: " + prod_id);
+        }
     }
 
-    public Category getCategoryByProduct(int prod_id) {
-        Product prod = productRepository.findById(prod_id).orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + prod_id));
+    public Category getCategoryByProduct(int prodId) {
+        Product prod = productRepository.findById(prodId).orElseThrow(() -> new ResourceNotFoundException("Cannot get category. Product not found with id: " + prodId));
+
+        if (prod.getCategory() == null) {
+            throw new ResourceNotFoundException("Product with id " + prodId + " does not have an associated category.");
+        }
         return prod.getCategory();
     }
 
-
+    @Transactional
     public Product updateQuantity(int productId, int newQuantity) {
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + productId));
-
+                .orElseThrow(() -> new ResourceNotFoundException("Cannot update quantity. Product not found with id: " + productId));
         if (newQuantity < 0) {
-            throw new IllegalArgumentException("Stock level cannot be negative.");
+            throw new IllegalArgumentException("Stock quantity cannot be negative.");
         }
 
         product.setStock(newQuantity);
-        return productRepository.save(product);
+        try {
+            return productRepository.save(product);
+        } catch (DataAccessException e) {
+            throw new OperationFailedException("Failed to update quantity for product ID: " + productId);
+        } catch (Exception e) {
+            throw new OperationFailedException("An unexpected error occurred while updating quantity for product ID: " + productId);
+        }
     }
 
-
+    @Transactional
     public void deleteProd(int prodId) {
         if (!productRepository.existsById(prodId)) {
-            throw new ResourceNotFoundException("User not found with id " + prodId);
+            throw new ResourceNotFoundException("Cannot delete. Product not found with id: " + prodId);
         }
-        productRepository.deleteById(prodId);
+        try {
+            productRepository.deleteById(prodId);
+        } catch (DataAccessException e) {
+            // Consider catching specific constraint violation exceptions if products are linked elsewhere
+            throw new OperationFailedException("Failed to delete product with ID: " + prodId);
+        } catch (Exception e) {
+            throw new OperationFailedException("An unexpected error occurred while deleting product with ID: " + prodId);
+        }
     }
 
     public Product getProductByProdName(String prodName) {
@@ -95,7 +157,7 @@ public class ProductService {
     }
 
     public List<Product> getProductsByCategoryName(String categoryName) {
-        Category category = categoryRepository.findByCategoryName(categoryName).orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + categoryName));
+        Category category = categoryRepository.findByCategoryName(categoryName).orElseThrow(() -> new ResourceNotFoundException("Cannot get products. Category not found with name: " + categoryName));
         List<Product> productList = productRepository.findByCategory(category);
 
         if (productList.isEmpty()) {
