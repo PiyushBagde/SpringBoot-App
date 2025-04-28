@@ -31,13 +31,15 @@ public class JwtFilter extends OncePerRequestFilter {
         String token = null;
         String username = null;
         String role = null;
-        System.out.println("extracted role in jwt filter" + role);
+        System.out.println("extracted role in jwt filter " + role);
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             token = authHeader.substring(7);
             username = jwtService.extractUsername(token);
             role = jwtService.extractRole(token);
         }
+
+        System.out.println("extracted role in jwt filter " + role);
 
         if (username != null && role != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(role));

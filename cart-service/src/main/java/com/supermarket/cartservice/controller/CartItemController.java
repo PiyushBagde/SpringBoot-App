@@ -24,8 +24,8 @@ public class CartItemController {
 	
 	@PostMapping("/addToCartItem/")
 	public String addToCartItem(@RequestBody CartItems cartItem) {
-		cartItemService.addItemInCart(cartItem);
-		return "Item Added Successfully";
+		CartItems item =  cartItemService.addItemInCart(cartItem);
+		return item.getProdName() + " added to cart of userId" + item.getCart().getUserId();
 	}
 	
 	@GetMapping("/getCartItemsByUserId/{userId}")
@@ -33,12 +33,12 @@ public class CartItemController {
 		return cartItemService.getCartItemsByUserId(userId);
 	}
 	
-	@PutMapping("/customer/updateItemQuantity/{cartItemId}/{quantity}")
+	@PutMapping("/updateItemQuantity/{cartItemId}/{quantity}")
 	public CartItems updateItemQuantity(@PathVariable int cartItemId,@PathVariable int quantity) {
 		return cartItemService.updateItemQuantity(cartItemId, quantity);
 	}
 	
-	@DeleteMapping("/customer/removeCartItem/{cartItemId}")
+	@DeleteMapping("/removeCartItem/{cartItemId}")
 	public String removeCartItem(@PathVariable int cartItemId) {
 		cartItemService.removeCartItem(cartItemId);
 		return "Item removed from cart successfully.";

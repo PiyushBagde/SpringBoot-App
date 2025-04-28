@@ -1,17 +1,20 @@
 package com.supermarket.paymentservice.service;
 
 import com.supermarket.paymentservice.dto.OrderDto;
+import com.supermarket.paymentservice.exception.OperationFailedException;
 import com.supermarket.paymentservice.exception.ResourceNotFoundException;
 import com.supermarket.paymentservice.feign.BillingServiceClient;
 import com.supermarket.paymentservice.model.PaymentMode;
 import com.supermarket.paymentservice.model.Transaction;
 import com.supermarket.paymentservice.repository.TransactionRepository;
+import feign.FeignException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class TransactionService {
@@ -23,85 +26,141 @@ public class TransactionService {
 
     public Transaction proceedTransaction(int orderId, PaymentMode paymentMode) {
         // Step 1: Get order info from billing-service using Feign client
-        OrderDto order = billingServiceClient.getOrderByOrderId(orderId);
-        if (order == null) {
-            throw new RuntimeException("Order not found with ID: " + orderId);
+        OrderDto order;
+        try {
+            order = billingServiceClient.getOrderByOrderId(orderId);
+            if (order == null) {
+                throw new ResourceNotFoundException("Order not found with ID: " + orderId + " (Billing service returned null)");
+            }
+        } catch (FeignException.NotFound e) {
+            throw new ResourceNotFoundException("Order not found with ID: " + orderId + " in Billing Service.", e);
+        } catch (FeignException e) {
+            throw new OperationFailedException("Failed to retrieve order details from Billing Service.", e);
+        } catch (Exception e) {
+            throw new OperationFailedException("An unexpected error occurred while fetching order details.", e);
         }
+
 
         Transaction newTransaction = new Transaction();
         newTransaction.setOrderId(orderId);
         newTransaction.setUserId(order.getUserId());
         newTransaction.setRequiredAmount(order.getTotalBillPrice());
         newTransaction.setPaymentMode(paymentMode);
-        newTransaction.setPaymentTime(LocalDateTime.now());
-        return transactionRepository.save(newTransaction);
+        newTransaction.setPaymentTime(LocalDateTime.now()); // initial time
+        newTransaction.setPaymentStatus("Pending"); // initial status
+
+        try {
+            return transactionRepository.save(newTransaction);
+        } catch (DataAccessException e) {
+            throw new OperationFailedException("Failed to save initial transaction record.", e);
+        } catch (Exception e) {
+            throw new OperationFailedException("An unexpected error occurred while saving the transaction record.", e);
+        }
     }
 
+
     public void verifyTransaction(Transaction transaction, double receivedAmount) {
+        if (receivedAmount < 0) {
+            throw new IllegalArgumentException("Received amount cannot be negative.");
+        }
+
+        transaction.setReceivedAmount(receivedAmount); // Recording what was actually received
+        transaction.setTransactionTime(LocalDateTime.now());
+
         if (receivedAmount >= transaction.getRequiredAmount()) {
             transaction.setBalanceAmount(0.0);
-            transaction.setReceivedAmount(receivedAmount);
             transaction.setPaymentStatus("Completed");
             System.out.println(transaction.getUserId());
-        } else if (receivedAmount < transaction.getRequiredAmount()) {
+        } else {
             transaction.setBalanceAmount(transaction.getRequiredAmount() - receivedAmount);
-
-            transaction.setReceivedAmount(receivedAmount);
             transaction.setPaymentStatus("Incomplete");
         }
     }
 
+    @Transactional
     public Transaction payByCard(int orderId, double receivedAmount, String cardNumber, String cardHolderName) {
-        Transaction transaction = proceedTransaction(orderId, PaymentMode.CARD);
         if (cardNumber == null || cardHolderName == null || cardHolderName.isBlank()) {
             throw new IllegalArgumentException("Card number and holder name are required");
         }
+
+        Transaction transaction = proceedTransaction(orderId, PaymentMode.CARD);
+
         transaction.setCardNumber(cardNumber);
         transaction.setCardHolderName(cardHolderName);
         verifyTransaction(transaction, receivedAmount);
-        return transactionRepository.save(transaction);
+
+        try {
+            return transactionRepository.save(transaction);
+        } catch (DataAccessException e) {
+            // Transaction should roll back
+            throw new OperationFailedException("Failed to save final card payment transaction details.", e);
+        }
     }
 
+    @Transactional
     public Transaction payByUpi(int orderId, double receivedAmount, String upiId) {
-        Transaction transaction = proceedTransaction(orderId, PaymentMode.UPI);
         if (upiId == null || upiId.isBlank()) {
             throw new IllegalArgumentException("UPI ID is required for UPI payments");
         }
-        verifyTransaction(transaction, receivedAmount);
+        Transaction transaction = proceedTransaction(orderId, PaymentMode.UPI);
         transaction.setUpiId(upiId);
-        transaction.setTransactionTime(LocalDateTime.now());
-        return transactionRepository.save(transaction);
+        verifyTransaction(transaction, receivedAmount);
+
+        try {
+            return transactionRepository.save(transaction);
+        } catch (DataAccessException e) {
+            throw new OperationFailedException("Failed to save final UPI payment transaction details.", e);
+        }
     }
 
+    @Transactional
     public Transaction payByCash(int orderId, double receivedAmount) {
         Transaction transaction = proceedTransaction(orderId, PaymentMode.CASH);
         verifyTransaction(transaction, receivedAmount);
-        return transactionRepository.save(transaction);
+
+        try {
+            return transactionRepository.save(transaction);
+        } catch (DataAccessException e) {
+            throw new OperationFailedException("Failed to save final cash payment transaction details.", e);
+        }
     }
+
 
     public Transaction getPaymentById(int transactionId) {
         return transactionRepository.findById(transactionId)
-                .orElseThrow(() -> new RuntimeException("Payment not found with ID: " + transactionId
-                ));
+                .orElseThrow(() -> new ResourceNotFoundException("Payment transaction not found with ID: " + transactionId));
     }
 
     public List<Transaction> getPaymentsByMode(PaymentMode mode) {
-        return transactionRepository.findAll()
-                .stream()
-                .filter(p -> p.getPaymentMode() == mode)
-                .collect(Collectors.toList());
+//        return transactionRepository.findAll()
+//                .stream()
+//                .filter(p -> p.getPaymentMode() == mode)
+//                .collect(Collectors.toList());
+        try {
+            return transactionRepository.findAllByPaymentMode(mode);
+        } catch (DataAccessException e) {
+            throw new OperationFailedException("Failed to retrieve payment transactions by mode.", e);
+        }
     }
 
     public List<Transaction> getAllPayments() {
-        return transactionRepository.findAll();
+        try {
+            return transactionRepository.findAll();
+        } catch (DataAccessException e) {
+            throw new OperationFailedException("Failed to retrieve all transactions.", e);
+        }
     }
 
     public List<Transaction> getAllPaymentsByUserId(int userId) {
-        return transactionRepository.findAllByUserId(userId);
+        try {
+            return transactionRepository.findAllByUserId(userId);
+        } catch (DataAccessException e) {
+            throw new OperationFailedException("Failed to retrieve transactions for user ID: " + userId, e);
+        }
     }
 
     public Transaction getMyTransactionById(int userId, int transactionId) {
-        return transactionRepository.findByTransactionIdAndUserId(transactionId, userId).orElseThrow(() -> new ResourceNotFoundException("Transaction not found with ID: " + transactionId));
+        return transactionRepository.findByTransactionIdAndUserId(transactionId, userId).orElseThrow(() -> new ResourceNotFoundException("Transaction not found with ID: " + transactionId + " for user ID: " + userId));
     }
 }
 

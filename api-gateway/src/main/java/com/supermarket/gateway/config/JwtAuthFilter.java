@@ -1,7 +1,6 @@
 package com.supermarket.gateway.config;
 
 import com.supermarket.gateway.config.util.JWTUtil;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
@@ -25,8 +24,7 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
         String path = request.getURI().getPath();
         System.out.println("** path: " + path);
 
-        if (request.getURI().getPath().startsWith("/user/login") ||
-                request.getURI().getPath().startsWith("/user/register")) {
+        if (request.getURI().getPath().startsWith("/user/login") || request.getURI().getPath().startsWith("/user/register")) {
             return chain.filter(exchange); // Don't block login/register
         }
 
@@ -49,121 +47,72 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
         System.out.println("** extracted role: " + role);
         int userId = jwtUtil.extractUserId(token);
 
-        if(!isAuthourized(path, role)) {
+        if (!isAuthorized(path, role)) {
             return forbidden(exchange);
         }
         System.out.println("** path and role validated");
 
-        ServerHttpRequest modifiedRequest = exchange.getRequest()
-                .mutate()
-                .header("X-Authenticated_User", username)
-                .header("X-Role", role)
-                .header("X-UserId", String.valueOf(userId))
-                .build();
+        ServerHttpRequest modifiedRequest = exchange.getRequest().mutate().header("X-Authenticated_User", username).header("X-Role", role).header("X-UserId", String.valueOf(userId)).build();
         System.out.println("** Token validated. User: " + username + ", Role: " + role);
-        return chain
-                .filter(exchange
-                        .mutate()
-                        .request(modifiedRequest)
-                        .build());
+        return chain.filter(exchange.mutate().request(modifiedRequest).build());
     }
 
 
-    private boolean isAuthourized(String path, String role) {
-        System.out.println("** In isauthourized path: " + path + ", role: " + role);
-        System.out.println("** isAuthourized activated");
+    private boolean isAuthorized(String path, String role) {
+        System.out.println("** In isAuthorized path: " + path + ", role: " + role);
+        System.out.println("** isAuthorized activated");
 
         // route access for admin-biller-customer
-        if (path.startsWith("/bill/admin-biller-customer") && (role.equals("ADMIN") || role.equals("BILLER") || role.equals("CUSTOMER"))) {
+        if (path.startsWith("/bill/admin-biller-customer") && (role.equals("ADMIN") || role.equals("BILLER") || role.equals("CUSTOMER")))
             return true;
-        }
 
         // route access for admin-biller
-        if (path.startsWith("/bill/admin-biller") && (role.equals("ADMIN") || role.equals("BILLER"))) {
-            System.out.println("** failed by 9th");
-            return true;
-        }
-        // route access for admin-customer
-        if (path.startsWith("/invent/admin-customer") && (role.equals("ADMIN") || role.equals("CUSTOMER"))) {
-            System.out.println("** failed by 10th");
-            return true;
-        }
+        if (path.startsWith("/bill/admin-biller") && (role.equals("ADMIN") || role.equals("BILLER"))) return true;
 
-        if (path.startsWith("/bill/admin-customer") && (role.equals("ADMIN") || role.equals("CUSTOMER"))) {
-            return true;
-        }
+        // route access for admin-customer
+        if (path.startsWith("/invent/admin-customer") && (role.equals("ADMIN") || role.equals("CUSTOMER"))) return true;
+
+        if (path.startsWith("/bill/admin-customer") && (role.equals("ADMIN") || role.equals("CUSTOMER"))) return true;
 
         // route access for biller-customer
-        if (path.startsWith("/invent/biller-customer") && (role.equals("BILLER") || role.equals("CUSTOMER"))) {
-            System.out.println("** failed by 11th");
+        if (path.startsWith("/user/biller-customer") && (role.equals("BILLER") || role.equals("CUSTOMER"))) return true;
+
+        if (path.startsWith("/invent/biller-customer") && (role.equals("BILLER") || role.equals("CUSTOMER")))
             return true;
-        }
-        if (path.startsWith("/cart/biller-customer") && (role.equals("BILLER") || role.equals("CUSTOMER"))){
-            System.out.println("** failed by 12th");
+
+        if (path.startsWith("/cart/biller-customer") && (role.equals("BILLER") || role.equals("CUSTOMER"))) return true;
+
+        if (path.startsWith("/bill/biller-customer") && (role.equals("BILLER") || role.equals("CUSTOMER"))) return true;
+
+        if (path.startsWith("/payment/biller-customer") && (role.equals("BILLER") || role.equals("CUSTOMER")))
             return true;
-        }
-        if (path.startsWith("/bill/biller-customer") && (role.equals("BILLER") || role.equals("CUSTOMER"))) {
-            System.out.println("** failed by 13th");
-            return true;
-        }
-        if (path.startsWith("/payment/biller-customer") && (role.equals("BILLER") || role.equals("CUSTOMER"))) {
-            System.out.println("** failed by 14th");
-            return true;
-        }
 
         // route access for admin only
-        if (path.startsWith("/user/admin") && role.equals("ADMIN")) {
-            System.out.println("** failed by 1st");
-            return true;
-        }
-        if (path.startsWith("/invent/admin") && role.equals("ADMIN")) {
-            System.out.println("** failed by 2nd");
-            return true;
-        }
-        if (path.startsWith("/bill/admin") && role.equals("ADMIN")) {
-            System.out.println("** failed by 3rd");
-            return true;
-        }
-        if (path.startsWith("/payment/admin") && role.equals("ADMIN")) {
-            System.out.println("** failed by 4th");
-            return true;
-        }
-        if (path.startsWith("/cart/admin") && role.equals("ADMIN")) {
-            System.out.println("** failed by 5th");
-            return true;
-        }
+        if (path.startsWith("/user/admin") && role.equals("ADMIN")) return true;
+
+        if (path.startsWith("/invent/admin") && role.equals("ADMIN")) return true;
+
+        if (path.startsWith("/bill/admin") && role.equals("ADMIN")) return true;
+
+        if (path.startsWith("/payment/admin") && role.equals("ADMIN")) return true;
+
+        if (path.startsWith("/cart/admin") && role.equals("ADMIN")) return true;
 
         // route access for biller
-        if (path.startsWith("/invent/biller") && role.equals("BILLER")) {
-            System.out.println("** failed by 6th");
-            return true;
-        }
-        if (path.startsWith("/cart/biller") && role.equals("BILLER"))  {
-            System.out.println("** failed by 7th");
-            return true;
-        }
+        if (path.startsWith("/invent/biller") && role.equals("BILLER")) return true;
 
-        if (path.startsWith("/bill/biller") && role.equals("BILLER"))  {
-            return true;
-        }
+        if (path.startsWith("/cart/biller") && role.equals("BILLER")) return true;
+
+        if (path.startsWith("/bill/biller") && role.equals("BILLER")) return true;
 
         // route access for customer
-        if (path.startsWith("/cart/customer") && role.equals("CUSTOMER"))  {
-            System.out.println("** failed by 8th");
-            return true;
-        }
+        if (path.startsWith("/cart/customer") && role.equals("CUSTOMER")) return true;
 
-        if (path.startsWith("/invent/customer") && role.equals("CUSTOMER"))  {
-            return true;
-        }
+        if (path.startsWith("/invent/customer") && role.equals("CUSTOMER")) return true;
 
-        if (path.startsWith("/bill/customer") && role.equals("CUSTOMER"))  {
-            return true;
-        }
-        if(path.startsWith("/payment/customer") && role.equals("CUSTOMER")) {
-            return true;
-        }
+        if (path.startsWith("/bill/customer") && role.equals("CUSTOMER")) return true;
 
+        if (path.startsWith("/payment/customer") && role.equals("CUSTOMER")) return true;
 
         return false;
     }

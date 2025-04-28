@@ -1,176 +1,290 @@
 package com.supermarket.cartservice.service;
 
-import java.util.List;
-import java.util.Optional;
-
 import com.supermarket.cartservice.dto.ProductResponse;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
+import com.supermarket.cartservice.exception.CartOperationException;
+import com.supermarket.cartservice.exception.OperationFailedException;
+import com.supermarket.cartservice.exception.ResourceNotFoundException;
 import com.supermarket.cartservice.feign.InventoryServiceClient;
 import com.supermarket.cartservice.model.Cart;
 import com.supermarket.cartservice.model.CartItems;
 import com.supermarket.cartservice.repository.CartItemsRepository;
 import com.supermarket.cartservice.repository.CartRepository;
-
+import feign.FeignException;
 import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service
 public class CartService {
-	@Autowired
-	private CartRepository cartRepository;
-	
-	@Autowired
-	private CartItemsRepository cartItemsRepository;
+    @Autowired
+    private CartRepository cartRepository;
 
-	@Autowired
-	private InventoryServiceClient inventoryServiceClient;
-	
-	
-	public CartService(CartRepository cartRepository, CartItemsRepository cartItemsRepository,
-			InventoryServiceClient inventoryServiceClient) {
-		super();
-		this.cartRepository = cartRepository;
-		this.cartItemsRepository = cartItemsRepository;
-		this.inventoryServiceClient = inventoryServiceClient;
-	}
-	
-	// increase price
-	public double increasePrice(double cartTotalPrice, double totalPrice) {
-		return cartTotalPrice + totalPrice;
-	}
-	
-	// decrease price
-	public double decreasePrice(double cartTotalPrice, double totalPrice) {
-		return cartTotalPrice - totalPrice;
-	}
-	
-	
-	
-	/**
-	 * Adds a product to the user's cart. If the cart does not yet exist for the user,
-	 * a new cart is created. The method calculates the total price for the product based
-	 * on the quantity and updates the cart's total price accordingly.
-	 *
-	 * @param userId The ID of the user for whom the cart needs to be updated.
-	 * @param prodName The name of the product to be added to the cart.
-	 * @param quantity The quantity of the product to be added to the cart.
-	 */
-	public void addToCart(int userId, String prodName, int quantity) {
-		ProductResponse product = inventoryServiceClient.getProductByProdName(prodName);
-		int prodId = product.getProdId();
-		double prodPrice = product.getPrice();
-		double totalPrice = prodPrice * quantity;
-		
-		Optional<Cart> cart = cartRepository.findByUserId(userId);
-		Cart newCart;
+    @Autowired
+    private CartItemsRepository cartItemsRepository;
 
-		CartItems item = new CartItems();
-		if(cart.isEmpty()) {
-			Cart emptyCart = new Cart();
-			emptyCart.setUserId(userId);
-			emptyCart.setCartTotalPrice(0.0);
-			cartRepository.save(emptyCart);
-			newCart=emptyCart;
-		}else {
-			newCart = cart.get();
-		}
-		item.setCart(newCart);
-		item.setProdId(prodId);
-		item.setProdName(prodName);
-		item.setQuantity(quantity);
-		item.setPrice(prodPrice);
-		item.setTotalPrice(totalPrice);
+    @Autowired
+    private InventoryServiceClient inventoryServiceClient;
 
-		cartItemsRepository.save(item);
-		
-		double cartTotal = increasePrice(newCart.getCartTotalPrice(), totalPrice);
-		newCart.setCartTotalPrice(cartTotal);
-		cartRepository.save(newCart);
-	}
-
-	public Cart getCartByUserId(int userId){
-		return cartRepository.findByUserId(userId).orElseThrow(() -> new RuntimeException("No cart available for given userId"));
-	}
-	
-	//increase quantity
-	public void increaseQuantity(int userId, String prodName) {
-		Cart cart = cartRepository.findByUserId(userId).orElseThrow(() -> new RuntimeException("Cart not found."));
-
-		for(CartItems item :cart.getItems()) {
-			if(item.getProdName().equalsIgnoreCase(prodName)) {
-				item.setQuantity(item.getQuantity() + 1);
-				double totalPrice = item.getTotalPrice() + item.getPrice();
-				double updatedPrice = increasePrice(cart.getCartTotalPrice(), totalPrice);
-				item.setTotalPrice(totalPrice);
-				cart.setCartTotalPrice(updatedPrice);
-			}
-		}
-		cartRepository.save(cart);
-	}
-	
-	// decrease quantity
-	public void decreaseQuantity(int userId, String prodName) {
-		Cart cart = cartRepository.findByUserId(userId).orElseThrow(() -> new RuntimeException("Cart not found."));
-		for(CartItems item :cart.getItems()) {
-			if(item.getProdName().equalsIgnoreCase(prodName)) {
-				item.setQuantity(item.getQuantity() - 1);
-				double totalPrice = item.getTotalPrice() - item.getPrice();
-				double updatedPrice = decreasePrice(cart.getCartTotalPrice(), totalPrice);
-				item.setTotalPrice(totalPrice);
-				cart.setCartTotalPrice(updatedPrice);
-			}
-		}
-		cartRepository.save(cart);
-	}
-
-	@Transactional
-	public CartItems removeItemFromCart(int userId, String prodName) {
-        Cart cart = getCartByUserId(userId);
-        CartItems item = cartItemsRepository.findByCartCartIdAndProdName(cart.getCartId(), prodName).orElseThrow(() -> new RuntimeException("Cart item not found in cart for user: " + userId));
-        double updatedPrice = decreasePrice(cart.getCartTotalPrice(), item.getTotalPrice());
-        cart.setCartTotalPrice(updatedPrice);
-        cart.getItems().remove(item);
-        cartItemsRepository.delete(item);
-        cartRepository.save(cart);
-        return item;
+    private double calculateNewTotal(double currentTotal, double itemPriceChange, boolean increase) {
+        return increase ? currentTotal + itemPriceChange : currentTotal - itemPriceChange;
     }
-	
-	@Transactional
-	public void clearCart(int userId) {
-		List<CartItems> itemsList = cartItemsRepository.findByCart_UserId(userId);
-		Cart cart = cartRepository.findByUserId(userId).orElseThrow();
-		if(itemsList.isEmpty()) {
-	        System.out.println("Cart is already empty for user: " + userId);
-	    }
-        cartItemsRepository.deleteAll(itemsList);
-        
-        List<CartItems> list = cart.getItems();
-        list.clear();
-        cart.setItems(list);
-        cart.setCartTotalPrice(0.0);
-        
-        for(CartItems item: itemsList) {
-        	inventoryServiceClient.reduceStock(item.getProdId(), item.getQuantity());
+
+    @Transactional
+    public void addToCart(int userId, String prodName, int quantity) {
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("Quantity to add must be positive.");
         }
-        
-        cartRepository.save(cart);
+        ProductResponse product;
+
+        try {
+            product = inventoryServiceClient.getProductByProdName(prodName);
+            // if available stock
+            if (product.getStock() < quantity) {
+                throw new CartOperationException("Insufficient stock for product '" + prodName + "'. Available: " + product.getStock());
+            }
+        } catch (FeignException.NotFound e) {
+            throw new ResourceNotFoundException("Product '" + prodName + "' not found in inventory.", e);
+        } catch (FeignException e) {
+            throw new OperationFailedException("Failed to retrieve product details from inventory service.", e);
+        } catch (Exception e) {
+            // Catch any other unexpected error
+            throw new OperationFailedException("An unexpected error occurred while contacting inventory service.", e);
+        }
+
+        int prodId = product.getProdId();
+        double prodPrice = product.getPrice();
+        double totalPrice = prodPrice * quantity;
+
+        // find or create new cart
+        Cart cart = cartRepository.findByUserId(userId).orElseGet(() -> {
+            // if no cart found for userId, creating new one
+            Cart newCart = new Cart();
+            newCart.setUserId(userId);
+            newCart.setCartTotalPrice(0.0);
+            try {
+                return cartRepository.save(newCart);
+            } catch (DataAccessException dae) {
+                throw new OperationFailedException("Failed to create a new cart for user: " + userId, dae);
+            }
+        });
+
+        // Check if item already exists in cart, update quantity if it does
+        Optional<CartItems> existingItemOpt = cart.getItems().stream()
+                .filter(item -> item.getProdId() == prodId)
+                .findFirst();
+
+        CartItems itemToSave;
+        double cartTotalChange;
+        if (existingItemOpt.isPresent()) {
+            itemToSave = existingItemOpt.get();
+            int newQuantity = itemToSave.getQuantity() + quantity;
+            // Check stock for the *additional* quantity
+            ProductResponse currentStockCheck;
+            try {
+                currentStockCheck = inventoryServiceClient.getProductById(prodId);
+            } catch (FeignException.NotFound e) {
+                throw new ResourceNotFoundException("Product '" + prodName + "' not found in inventory.", e);
+            }
+            if (currentStockCheck.getStock() < newQuantity) {
+                throw new CartOperationException("Insufficient stock for product '" + prodName + "'. Available: " + currentStockCheck.getStock());
+            }
+            itemToSave.setQuantity(newQuantity);
+            itemToSave.setTotalPrice(prodPrice * newQuantity); // Recalculate total price for item
+        } else {
+            itemToSave = new CartItems();
+            itemToSave.setCart(cart);
+            itemToSave.setProdId(prodId);
+            itemToSave.setProdName(prodName);
+            itemToSave.setQuantity(quantity);
+            itemToSave.setPrice(prodPrice); // Price per unit at the time of adding
+            itemToSave.setTotalPrice(totalPrice);
+            cart.getItems().add(itemToSave); // Add to the list in the Cart object
+        }
+        cartTotalChange = totalPrice;
+
+        try {
+            cartItemsRepository.save(itemToSave);
+            double newCartTotal = calculateNewTotal(cart.getCartTotalPrice(), cartTotalChange, true);
+            cart.setCartTotalPrice(newCartTotal);
+            cartRepository.save(cart);
+        } catch (DataAccessException e) {
+            throw new OperationFailedException("Failed to save item or update cart for user: " + userId, e);
+        } catch (Exception e) {
+            throw new OperationFailedException("An unexpected error occurred while updating the cart for user: " + userId, e);
+        }
     }
 
-	public int getCartIdByUserId(int userId){
-		 Cart cart = cartRepository.findByUserId(userId).orElseThrow(() -> new RuntimeException("Cart not found"));
-		 return cart.getCartId();
-	}
-	
-	@Transactional
-	public void deleteCart(int cartId) {
-		cartItemsRepository.deleteByCart_CartId(cartId);
-		cartRepository.deleteById(cartId);
-		
-	}
+    public Cart getCartByUserId(int userId) {
+        return cartRepository.findByUserId(userId).orElseThrow(() -> new ResourceNotFoundException("No cart available for user ID: " + userId));
+    }
 
-	public Cart getMyCart(int userId) {
-		System.out.println("getMyCart called from cart repository");
-		return cartRepository.findByUserId(userId).orElseThrow(() -> new RuntimeException("No cart available for given userId"));
-	}
+    //increase quantity
+    @Transactional
+    public void increaseQuantity(int userId, String prodName) {
+        Cart cart = getCartByUserId(userId); // Throws ResourceNotFoundException if cart not found
+        AtomicBoolean itemFound = new AtomicBoolean(false);
+
+        cart.getItems().stream()
+                .filter(item -> item.getProdName().equalsIgnoreCase(prodName))
+                .findFirst()
+                .ifPresentOrElse(item -> {
+                            itemFound.set(true);
+                            // Check inventory stock before increasing
+                            try {
+                                ProductResponse p = inventoryServiceClient.getProductById(item.getProdId());
+                                if (p.getStock() <= item.getQuantity()) {
+                                    throw new CartOperationException("Insufficient stock for product '" + prodName + "'. Available: " + p.getStock());
+                                }
+                            } catch (FeignException.NotFound e) {
+                                throw new ResourceNotFoundException("Product '" + prodName + "' not found in inventory.", e);
+                            }
+                            int newQuantity = item.getQuantity() + 1;
+                            item.setQuantity(newQuantity);
+                            double itemPrice = item.getPrice();
+                            item.setTotalPrice(itemPrice * newQuantity); // Update item total price
+
+                            double cartTotal = calculateNewTotal(cart.getCartTotalPrice(), itemPrice, true); // Increase cart total by one
+                            cart.setCartTotalPrice(cartTotal);
+
+                            try {
+                                cartItemsRepository.save(item); // Save the updated item
+                                cartRepository.save(cart);    // Save the updated cart total
+                            } catch (DataAccessException e) {
+                                throw new OperationFailedException("Failed to update item quantity or cart total for product: " + prodName, e);
+                            }
+                        },
+                        //  Throw if item not found
+                        () -> {
+                            throw new ResourceNotFoundException("Item '" + prodName + "' not found in the cart for user: " + userId);
+                        });
+    }
+
+    // decrease quantity
+    @Transactional
+    public void decreaseQuantity(int userId, String prodName) {
+        Cart cart = getCartByUserId(userId);
+        AtomicBoolean itemProcessed = new AtomicBoolean(false);
+
+        cart.getItems().stream()
+                .filter(item -> item.getProdName().equalsIgnoreCase(prodName))
+                .findFirst()
+                .ifPresentOrElse(item -> {
+                            itemProcessed.set(true);
+                            int currentQuantity = item.getQuantity();
+
+                            if (currentQuantity <= 1) {
+                                // If quantity is 1 or less, remove the item instead of decreasing
+                                removeItemFromCartInternal(cart, item);
+                            } else {
+                                int newQuantity = currentQuantity - 1;
+                                item.setQuantity(newQuantity);
+                                double itemPrice = item.getPrice();
+                                item.setTotalPrice(itemPrice * newQuantity); // Update item total price
+
+                                double cartTotal = calculateNewTotal(cart.getCartTotalPrice(), itemPrice, false); // Decrease cart total
+                                cart.setCartTotalPrice(cartTotal);
+
+                                try {
+                                    cartItemsRepository.save(item);
+                                    cartRepository.save(cart);
+                                } catch (DataAccessException e) {
+                                    throw new OperationFailedException("Failed to update item quantity or cart total for product: " + prodName, e);
+                                }
+                            }
+                        },
+                        () -> {
+                            throw new ResourceNotFoundException("Item '" + prodName + "' not found in the cart for user: " + userId);
+                        });
+    }
+
+    // Remove item from cart
+    private void removeItemFromCartInternal(Cart cart, CartItems item) {
+        double updatedPrice = calculateNewTotal(cart.getCartTotalPrice(), item.getTotalPrice(), false); // Decrease by item's total
+        cart.setCartTotalPrice(updatedPrice);
+        cart.getItems().remove(item); // Remove from collection in Cart object
+
+        try {
+            cartItemsRepository.delete(item); // Delete from DB
+            cartRepository.save(cart);        // Save updated cart total
+        } catch (DataAccessException e) {
+            throw new OperationFailedException("Failed to remove item '" + item.getProdName() + "' from cart.", e);
+        }
+    }
+
+    @Transactional
+    public void removeItemFromCart(int userId, String prodName) {
+        Cart cart = getCartByUserId(userId);
+        CartItems item = cartItemsRepository.findByCartCartIdAndProdName(cart.getCartId(), prodName).orElseThrow(() -> new ResourceNotFoundException("Item '" + prodName + "' not found in cart for user: " + userId));
+        removeItemFromCartInternal(cart, item); // Use internal helper
+    }
+
+    @Transactional
+    public void clearCart(int userId) {
+        Cart cart = getCartByUserId(userId);
+        List<CartItems> itemsList = cart.getItems();
+        if (cart.getCartTotalPrice() != 0.0) {
+            cart.setCartTotalPrice(0.0);
+            try {
+                cartRepository.save(cart);
+            } catch (DataAccessException e) {
+                throw new OperationFailedException("Failed to clear cart for user: " + userId, e);
+            }
+        }
+
+        for (CartItems item : itemsList) {
+            try {
+                inventoryServiceClient.reduceStock(item.getProdId(), item.getQuantity());
+            } catch (FeignException e) {
+                // Translate specific Feign errors if needed
+                if (e instanceof FeignException.NotFound) {
+                    throw new OperationFailedException("Error during cart clear: Product ID " + item.getProdId() + " not found in inventory.", e);
+                }
+                throw new OperationFailedException("Failed to update inventory for product ID " + item.getProdId() + " while clearing cart.", e);
+            } catch (Exception e) {
+                throw new OperationFailedException("An unexpected error occurred while updating inventory for product ID " + item.getProdId(), e);
+            }
+        }
+
+        try {
+            // Efficiently delete all items belonging to the cart
+            cartItemsRepository.deleteByCart_CartId(cart.getCartId());
+
+            // Clear the list in the Cart object and reset total price
+            cart.getItems().clear(); // Clear the collection managed by JPA
+            cart.setCartTotalPrice(0.0);
+            cartRepository.save(cart); // Save the cart with empty items list and zero total
+        } catch (DataAccessException e) {
+            // This is problematic - inventory was updated, but cart clear failed. Requires manual intervention or compensation.
+            throw new OperationFailedException("Failed to clear cart items from database after updating inventory.", e);
+        }
+    }
+
+    public int getCartIdByUserId(int userId) {
+        Cart cart = cartRepository.findByUserId(userId).orElseThrow(() -> new ResourceNotFoundException("Cart not found for user ID: " + userId));
+        return cart.getCartId();
+    }
+
+    @Transactional
+    public void deleteCart(int cartId) {
+        // Check if cart exists first to provide a better error message
+        if (!cartRepository.existsById(cartId)) {
+            throw new ResourceNotFoundException("Cannot delete. Cart not found with ID: " + cartId);
+        }
+        try {
+            // Delete associated items first due to potential foreign key constraints
+            cartItemsRepository.deleteByCart_CartId(cartId);
+            cartRepository.deleteById(cartId);
+        } catch (DataAccessException e) {
+            throw new OperationFailedException("Failed to delete cart with ID: " + cartId, e);
+        }
+    }
+
+    public Cart getMyCart(int userId) {
+        return getCartByUserId(userId); // Reuse the existing method with proper exception handling
+    }
 }

@@ -33,9 +33,9 @@ public class CategoryController {
         return categoryService.getAllCategoryName();
     }
 
-    @DeleteMapping("/admin/deleteCategory/{category_id}")
-    public String deleteCategory(@PathVariable int category_id) {
-        categoryService.deleteCategory(category_id);
+    @DeleteMapping("/admin/deleteCategory/{categoryId}")
+    public String deleteCategory(@PathVariable int categoryId) {
+        categoryService.deleteCategory(categoryId);
         return "Category deleted successfully";
     }
 
@@ -52,9 +52,9 @@ public class CategoryController {
         return categoryService.getCategoryByName(categoryName);
     }
 
-    @PutMapping("/admin/updateCategory/{id}")
-    public Category updateCategory(@PathVariable int id, @RequestParam String newCategory) {
-        return categoryService.updateCategory(id, newCategory);
+    @PutMapping("/admin/updateCategoryName/{id}")
+    public Category updateCategoryName(@PathVariable int id, @RequestParam String newCategoryName) {
+        return categoryService.updateCategoryName(id, newCategoryName);
     }
 
 

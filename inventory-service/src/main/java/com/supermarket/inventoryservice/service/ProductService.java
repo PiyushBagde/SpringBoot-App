@@ -86,8 +86,8 @@ public class ProductService {
     }
 
     @Transactional
-    public Product updateProduct(int prod_id, Product updatedproduct) {
-        Product existingProduct = productRepository.findById(prod_id).orElseThrow(() -> new ResourceNotFoundException("Cannot update. Product not found with id: " + prod_id));
+    public Product updateProduct(int prodId, Product updatedproduct) {
+        Product existingProduct = productRepository.findById(prodId).orElseThrow(() -> new ResourceNotFoundException("Cannot update. Product not found with id: " + prodId));
 
         if (updatedproduct.getPrice() < 0) throw new IllegalArgumentException("Price cannot be negative.");
         if (updatedproduct.getStock() < 0) throw new IllegalArgumentException("Stock level cannot be negative.");
@@ -104,9 +104,9 @@ public class ProductService {
         try {
             return productRepository.save(existingProduct);
         } catch (DataAccessException e) {
-            throw new OperationFailedException("Failed to update product with ID: " + prod_id);
+            throw new OperationFailedException("Failed to update product with ID: " + prodId);
         } catch (Exception e) {
-            throw new OperationFailedException("An unexpected error occurred while updating product with ID: " + prod_id);
+            throw new OperationFailedException("An unexpected error occurred while updating product with ID: " + prodId);
         }
     }
 

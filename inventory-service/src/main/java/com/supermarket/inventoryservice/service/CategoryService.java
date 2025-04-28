@@ -21,10 +21,13 @@ public class CategoryService {
     private CategoryRepository categoryRepository;
 
     @Transactional
-    public Category addCategory(Category category) throws ResourceAlreadyExistsException {
+    public Category addCategory(Category category) {
+        System.out.println("inside add category");
         if (categoryRepository.findByCategoryName(category.getCategoryName()).isPresent()) {
+            System.out.println("existing category found");
             throw new ResourceAlreadyExistsException("Category with name '" + category.getCategoryName() + "' already exists.");
         }
+        System.out.println("existing category not found");
         if (category.getCategoryName() == null || category.getCategoryName().isBlank()) {
             throw new IllegalArgumentException("Category name cannot be empty.");
         }
@@ -56,7 +59,7 @@ public class CategoryService {
         return categoryRepository.findByCategoryName(categoryName).orElseThrow(() -> new ResourceNotFoundException("Category not found with name: " + categoryName));
     }
 
-    public Category updateCategory(int category_id, String newCategoryName) {
+    public Category updateCategoryName(int category_id, String newCategoryName) {
         if (newCategoryName == null || newCategoryName.isBlank()) {
             throw new IllegalArgumentException("New category name cannot be empty.");
         }
@@ -80,18 +83,18 @@ public class CategoryService {
     }
 
     @Transactional
-    public void deleteCategory(int category_id) {
-        if (!categoryRepository.existsById(category_id)) {
-            throw new ResourceNotFoundException("Cannot delete. Category not found with Id: " + category_id);
+    public void deleteCategory(int categoryId) {
+        if (!categoryRepository.existsById(categoryId)) {
+            throw new ResourceNotFoundException("Cannot delete. Category not found with Id: " + categoryId);
         }
         try {
-            categoryRepository.deleteById(category_id);
+            categoryRepository.deleteById(categoryId);
         } catch (DataIntegrityViolationException e) { // Catch constraint violation specifically
-            throw new OperationFailedException("Cannot delete category with ID: " + category_id + ". It might be associated with existing products.");
+            throw new OperationFailedException("Cannot delete category with ID: " + categoryId + ". It might be associated with existing products.");
         } catch (DataAccessException e) {
-            throw new OperationFailedException("Failed to delete category with ID: " + category_id);
+            throw new OperationFailedException("Failed to delete category with ID: " + categoryId);
         } catch (Exception e) {
-            throw new OperationFailedException("An unexpected error occurred while deleting category with ID: " + category_id);
+            throw new OperationFailedException("An unexpected error occurred while deleting category with ID: " + categoryId);
         }
     }
 

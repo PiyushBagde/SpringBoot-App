@@ -29,14 +29,13 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-
-
         return http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/user/register", "/user/login").permitAll() // no auth required for register and login
                         .requestMatchers("/user/admin/**").hasAuthority(Role.ADMIN.name()) // access only give to ADMIN
                         .requestMatchers("/user/customer/**").hasAuthority(Role.CUSTOMER.name())
+                        .requestMatchers("/user/biller-customer/**").hasAnyAuthority(Role.BILLER.name(), Role.CUSTOMER.name())
                         .anyRequest().authenticated())
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())

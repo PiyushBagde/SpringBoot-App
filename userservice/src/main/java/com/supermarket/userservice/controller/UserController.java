@@ -14,6 +14,11 @@ import java.util.List;
 public class UserController {
     @Autowired
     private UserService service;
+    // route for biller and user
+    @PutMapping("/biller-customer/updatePassword")
+    public String updatePassword(@RequestHeader("X-UserId") int userId, @RequestParam String newPassword) {
+        return service.updateUserPassword(userId, newPassword);
+    }
 
     // routes for admin
     @GetMapping("/admin/getAllUsers")
@@ -21,9 +26,9 @@ public class UserController {
         return service.getAllUser();
     }
 
-    @DeleteMapping("/admin/deleteUser/{id}")
-    public String deleteUserById(@PathVariable int id) throws Exception {
-        service.deleteUserById(id);
+    @DeleteMapping("/admin/deleteUser/{userId}")
+    public String deleteUser(@PathVariable int userId) throws Exception {
+        service.deleteUserById(userId);
         return "user deleted successfully";
     }
 
@@ -33,5 +38,8 @@ public class UserController {
         return user;
     }
 
-
+    @GetMapping("/admin/getUser/{userId}")
+    public User getUser(@PathVariable int userId) {
+        return service.getUserByUserId(userId);
+    }
 }

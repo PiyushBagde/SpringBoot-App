@@ -23,9 +23,9 @@ public class ProductController {
         return addedProduct.getProdName() + " added successfully";
     }
 
-    @PutMapping("/admin/updateProduct/{prod_id}")
-    public Product updateProd(@PathVariable int prod_id, @RequestBody Product updatedproduct) {
-        return productService.updateProduct(prod_id, updatedproduct);
+    @PutMapping("/admin/updateProduct/{prodId}")
+    public Product updateProd(@PathVariable int prodId, @RequestBody Product updatedproduct) {
+        return productService.updateProduct(prodId, updatedproduct);
 
     }
 
@@ -41,9 +41,9 @@ public class ProductController {
         return productService.getAllProducts();
     }
 
-    @PutMapping("/admin/updateQuantity/{prod_id}")
-    public Product updateQty(@PathVariable int prod_id, @RequestParam int newQuantity) {
-        return productService.updateQuantity(prod_id, newQuantity);
+    @PutMapping("/admin/updateQuantity/{prodId}")
+    public Product updateQty(@PathVariable int prodId, @RequestParam int newQuantity) {
+        return productService.updateQuantity(prodId, newQuantity);
     }
 
     // routes for biller and customer
@@ -69,10 +69,9 @@ public class ProductController {
     }
 
     // routes for biller
-
-    @GetMapping("/biller/getCategoryByProduct/{prod_id}")
-    public Category getCategoryByProduct(@PathVariable int prod_id) {
-        return productService.getCategoryByProduct(prod_id);
+    @GetMapping("/biller/getCategoryByProduct/{prodId}")
+    public Category getCategoryByProduct(@PathVariable int prodId) {
+        return productService.getCategoryByProduct(prodId);
     }
 
     @GetMapping("/getProductByProdName")

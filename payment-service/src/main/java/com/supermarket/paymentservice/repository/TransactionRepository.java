@@ -1,5 +1,6 @@
 package com.supermarket.paymentservice.repository;
 
+import com.supermarket.paymentservice.model.PaymentMode;
 import com.supermarket.paymentservice.model.Transaction;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -12,4 +13,6 @@ public interface TransactionRepository extends JpaRepository<Transaction, Intege
     List<Transaction> findAllByUserId(int userId);
 
     Optional<Transaction> findByTransactionIdAndUserId(int transactionId, int userId);
+
+    List<Transaction> findAllByPaymentMode(PaymentMode paymentMode);
 }
