@@ -15,8 +15,5 @@ public interface CartItemsRepository extends JpaRepository<CartItems, Integer> {
     @Transactional
     void deleteByCart_CartId(int cartId);
 
-    @Transactional
-    void deleteById(int cartItemId);
-
     Optional<CartItems> findByCartCartIdAndProdName(int cartCartId, String prodName);
 }

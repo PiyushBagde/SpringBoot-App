@@ -174,32 +174,31 @@ public class CartService {
                 .filter(item -> item.getProdName().equalsIgnoreCase(prodName))
                 .findFirst()
                 .ifPresentOrElse(item -> {
-                            itemProcessed.set(true);
-                            int currentQuantity = item.getQuantity();
+                    itemProcessed.set(true);
+                    int currentQuantity = item.getQuantity();
 
-                            if (currentQuantity <= 1) {
-                                // If quantity is 1 or less, remove the item instead of decreasing
-                                removeItemFromCartInternal(cart, item);
-                            } else {
-                                int newQuantity = currentQuantity - 1;
-                                item.setQuantity(newQuantity);
-                                double itemPrice = item.getPrice();
-                                item.setTotalPrice(itemPrice * newQuantity); // Update item total price
+                    if (currentQuantity <= 1) {
+                        // If quantity is 1 or less, remove the item instead of decreasing
+                        removeItemFromCartInternal(cart, item);
+                    } else {
+                        int newQuantity = currentQuantity - 1;
+                        item.setQuantity(newQuantity);
+                        double itemPrice = item.getPrice();
+                        item.setTotalPrice(itemPrice * newQuantity); // Update item total price
 
-                                double cartTotal = calculateNewTotal(cart.getCartTotalPrice(), itemPrice, false); // Decrease cart total
-                                cart.setCartTotalPrice(cartTotal);
+                        double cartTotal = calculateNewTotal(cart.getCartTotalPrice(), itemPrice, false); // Decrease cart total
+                        cart.setCartTotalPrice(cartTotal);
 
-                                try {
-                                    cartItemsRepository.save(item);
-                                    cartRepository.save(cart);
-                                } catch (DataAccessException e) {
-                                    throw new OperationFailedException("Failed to update item quantity or cart total for product: " + prodName, e);
-                                }
-                            }
-                        },
-                        () -> {
-                            throw new ResourceNotFoundException("Item '" + prodName + "' not found in the cart for user: " + userId);
-                        });
+                        try {
+                            cartItemsRepository.save(item);
+                            cartRepository.save(cart);
+                        } catch (DataAccessException e) {
+                            throw new OperationFailedException("Failed to update item quantity or cart total for product: " + prodName, e);
+                        }
+                    }
+                }, () -> {
+                    throw new ResourceNotFoundException("Item '" + prodName + "' not found in the cart for user: " + userId);
+                });
     }
 
     // Remove item from cart
@@ -251,15 +250,14 @@ public class CartService {
         }
 
         try {
-            // Efficiently delete all items belonging to the cart
+            //  delete all items belonging to the cart
             cartItemsRepository.deleteByCart_CartId(cart.getCartId());
 
             // Clear the list in the Cart object and reset total price
-            cart.getItems().clear(); // Clear the collection managed by JPA
+            cart.getItems().clear(); // Clear the collection managed
             cart.setCartTotalPrice(0.0);
             cartRepository.save(cart); // Save the cart with empty items list and zero total
         } catch (DataAccessException e) {
-            // This is problematic - inventory was updated, but cart clear failed. Requires manual intervention or compensation.
             throw new OperationFailedException("Failed to clear cart items from database after updating inventory.", e);
         }
     }
@@ -285,6 +283,12 @@ public class CartService {
     }
 
     public Cart getMyCart(int userId) {
-        return getCartByUserId(userId); // Reuse the existing method with proper exception handling
+        return getCartByUserId(userId);
+    }
+
+    public List<CartItems> getCartItemsByUserId(int userId) {
+        Cart cart;
+        cart = cartRepository.findByUserId(userId).orElseThrow(() -> new ResourceNotFoundException("No cart found for user ID: " + userId + " to retrieve items."));
+        return cart.getItems();
     }
 }

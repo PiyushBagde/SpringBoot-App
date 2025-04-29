@@ -2,11 +2,13 @@ package com.supermarket.cartservice.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.*;
 
 @Data
-@Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
@@ -22,21 +24,27 @@ public class CartItems {
     @ManyToOne
     @JoinColumn(name = "cart_id", nullable = false)
     @JsonIgnore
+    @NotNull
     private Cart cart;
 
     @Column(name = "product_id")
+    @Positive(message = "Product ID must be positive")
     private int prodId;
 
     @Column(name = "product_name")
+    @NotBlank(message = "Product name cannot be blank")
     private String prodName;
 
     @Column(name = "price")
+    @PositiveOrZero(message = "Price cannot be negative")
     private double price;
 
     @Column(name = "quantity")
+    @Positive(message = "Quantity must be positive")
     private int quantity;
 
     @Column(name = "total_price")
+    @PositiveOrZero(message = "Total price cannot be negative")
     private double totalPrice;
 
 
