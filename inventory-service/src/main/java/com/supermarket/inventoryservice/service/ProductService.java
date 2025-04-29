@@ -24,7 +24,7 @@ public class ProductService {
     @Autowired
     private CategoryRepository categoryRepository;
 
-    public Product addProduct(Product product) throws ResourceAlreadyExistsException {
+    public Product addProduct(Product product) {
         Category category = categoryRepository.findByCategoryName(product.getCategory().getCategoryName())
                 .orElseThrow(() -> new ResourceNotFoundException("Cannot add product. Category not found with name: " + product.getCategory().getCategoryName()));
         product.setCategory(category);
@@ -145,7 +145,6 @@ public class ProductService {
         try {
             productRepository.deleteById(prodId);
         } catch (DataAccessException e) {
-            // Consider catching specific constraint violation exceptions if products are linked elsewhere
             throw new OperationFailedException("Failed to delete product with ID: " + prodId);
         } catch (Exception e) {
             throw new OperationFailedException("An unexpected error occurred while deleting product with ID: " + prodId);

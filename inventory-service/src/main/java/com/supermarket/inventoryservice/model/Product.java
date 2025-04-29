@@ -1,6 +1,8 @@
 package com.supermarket.inventoryservice.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -18,16 +20,24 @@ public class Product {
     private int prodId;
 
     @Column(name = "product_name", nullable = false)
+    @NotBlank(message = "Product name cannot be blank") // Add validation
+    @Size(min = 2, max = 100, message = "Product name must be between 2 and 100 characters")
     private String prodName;
 
     @Column(name = "price", nullable = false)
+    @NotNull(message = "Price cannot be null")
+    @Positive(message = "Price must be positive")
     private double price;
 
     @Column(name = "quantity", nullable = false) // change the table name to stock
+    @NotNull(message = "Stock cannot be null")         // Add validation
+    @PositiveOrZero(message = "Stock cannot be negative")
     private int stock;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
+    @NotNull(message = "Category cannot be null")
+    @Valid
     private Category category;
 
     public int getProdId() {

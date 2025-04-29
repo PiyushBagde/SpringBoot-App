@@ -1,9 +1,13 @@
 package com.supermarket.inventoryservice.controller;
 
-import com.supermarket.inventoryservice.exception.ResourceAlreadyExistsException;
 import com.supermarket.inventoryservice.model.Category;
 import com.supermarket.inventoryservice.service.CategoryService;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -11,6 +15,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/invent")
+@Validated
 public class CategoryController {
 
     @Autowired
@@ -18,7 +23,7 @@ public class CategoryController {
 
     // routes for admin
     @PostMapping("/admin/addCategory")
-    public String addCategory(@RequestBody Category category) throws ResourceAlreadyExistsException {
+    public String addCategory(@Valid @RequestBody Category category){
         Category addedCategory =  categoryService.addCategory(category);
         return addedCategory.getCategoryName() +" Category added successfully";
     }
@@ -34,7 +39,7 @@ public class CategoryController {
     }
 
     @DeleteMapping("/admin/deleteCategory/{categoryId}")
-    public String deleteCategory(@PathVariable int categoryId) {
+    public String deleteCategory(@PathVariable @Min(value = 1, message = "Category ID must be positive") int categoryId) {
         categoryService.deleteCategory(categoryId);
         return "Category deleted successfully";
     }
@@ -42,18 +47,22 @@ public class CategoryController {
 
     // routes for biller and customer
     @GetMapping("/getCategoryById/{category_id}")
-    public Category getCategoryById(@PathVariable int category_id) {
+    public Category getCategoryById(@PathVariable @Min(value = 1, message = "Category ID must be positive") int category_id) {
         return categoryService.getCategoryById(category_id);
     }
 
 
     @GetMapping("/admin/getCategoryByName/{categoryName}")
-    public Category getCategoryByName(@PathVariable String categoryName) {
+    public Category getCategoryByName(@PathVariable @NotBlank(message = "Category name cannot be blank") String categoryName) {
         return categoryService.getCategoryByName(categoryName);
     }
 
     @PutMapping("/admin/updateCategoryName/{id}")
-    public Category updateCategoryName(@PathVariable int id, @RequestParam String newCategoryName) {
+    public Category updateCategoryName(
+            @PathVariable @Min(value = 1, message = "Category ID must be positive") int id,
+            @RequestParam @NotBlank(message = "New category name cannot be blank")
+            @Size(min = 2, max = 50, message = "Category name must be between 2 and 50 characters")
+            String newCategoryName) {
         return categoryService.updateCategoryName(id, newCategoryName);
     }
 
