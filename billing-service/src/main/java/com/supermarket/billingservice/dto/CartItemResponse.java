@@ -2,7 +2,7 @@ package com.supermarket.billingservice.dto;
 
 import lombok.Data;
 
-//orderrequest.java
+
 
 @Data
 public class CartItemResponse {
@@ -57,6 +57,5 @@ public class CartItemResponse {
 	public void setTotalPrice(double totalPrice) {
 		this.totalPrice = totalPrice;
 	}
-	
-	
+
 }
