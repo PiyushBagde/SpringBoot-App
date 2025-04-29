@@ -1,21 +1,34 @@
 package com.supermarket.userservice.exception;
 
+import jakarta.validation.ConstraintViolationException;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-@ControllerAdvice
+
+@RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @Value("${spring.application.name}")
     private String serviceName;
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     private Map<String, Object> createErrorBody(HttpStatus status, String message, WebRequest request) {
         Map<String, Object> body = new LinkedHashMap<>();
@@ -32,7 +45,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<Object> handleResourceNotFoundException(ResourceNotFoundException ex, WebRequest request) {
 
         Map<String, Object> body = createErrorBody(HttpStatus.NOT_FOUND, ex.getMessage(), request);
-        logger.warn(String.format("[%s] Resource not found: %s", serviceName, ex.getMessage())); // Add service name to log
+        log.warn("[{}] Resource not found: {}", serviceName, ex.getMessage()); // Add service name to log
         return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
     }
 
@@ -40,7 +53,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<Object> handleUserAlreadyExistsException(UserAlreadyExistsException ex, WebRequest request) {
 
         Map<String, Object> body = createErrorBody(HttpStatus.CONFLICT, ex.getMessage(), request);
-        logger.warn(String.format("[%s] User already exists conflict: %s", serviceName, ex.getMessage())); // Add service name to log
+        log.warn("[{}] User already exists conflict: {}", serviceName, ex.getMessage()); // Add service name to log
         return new ResponseEntity<>(body, HttpStatus.CONFLICT);
     }
 
@@ -48,7 +61,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<Object> handleAuthenticationFailedException(AuthenticationFailedException ex, WebRequest request) {
 
         Map<String, Object> body = createErrorBody(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
-        logger.warn(String.format("[%s] Authentication failed: %s", serviceName, ex.getMessage())); // Add service name to log
+        log.warn("[{}] Authentication failed: {}", serviceName, ex.getMessage()); // Add service name to log
         return new ResponseEntity<>(body, HttpStatus.UNAUTHORIZED);
     }
 
@@ -57,7 +70,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
         Map<String, Object> body = createErrorBody(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage(), request);
         // Log the error with stack trace for internal server errors
-        logger.error(String.format("[%s] Operation failed: %s", serviceName, ex.getMessage()), ex); // Add service name to log
+        log.error(String.format("[%s] Operation failed: %s", serviceName, ex.getMessage()), ex); // Add service name to log
         return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
@@ -67,7 +80,44 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         String message = "An unexpected error occurred. Please try again later.";
         Map<String, Object> body = createErrorBody(HttpStatus.INTERNAL_SERVER_ERROR, message, request);
         // Log the full exception details for debugging
-        logger.error(String.format("[%s] Unhandled exception occurred: %s", serviceName, ex.getMessage()), ex); // Add service name to log
+        log.error(String.format("[%s] Unhandled exception occurred: %s", serviceName, ex.getMessage()), ex); // Add service name to log
         return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    // exception
+    @Override
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(
+            MethodArgumentNotValidException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getAllErrors().forEach((error) -> {
+            String fieldName = ((FieldError) error).getField();
+            String errorMessage = error.getDefaultMessage();
+            errors.put(fieldName, errorMessage);
+        });
+
+        // Use our standard error body structure
+        Map<String, Object> body = createErrorBody(HttpStatus.BAD_REQUEST, "Validation failed on request body", request);
+        body.put("errors", errors); // Add the specific field errors
+
+        log.warn("[{}] Validation failed for @RequestBody: {}", serviceName, errors);
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<Object> handleConstraintViolationException(ConstraintViolationException ex, WebRequest request) {
+        Map<String, String> errors = new HashMap<>();
+        ex.getConstraintViolations().forEach(cv -> {
+            String propertyPath = cv.getPropertyPath().toString();
+            String fieldName = propertyPath.substring(propertyPath.lastIndexOf('.') + 1);
+            String message = cv.getMessage();
+            errors.put(fieldName, message);
+        });
+
+        Map<String, Object> body = createErrorBody(HttpStatus.BAD_REQUEST, "Validation failed on request parameters or path variables", request);
+        body.put("errors", errors);
+
+        log.warn("[{}] Validation failed for parameters/path variables: {}", serviceName, errors);
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
 }

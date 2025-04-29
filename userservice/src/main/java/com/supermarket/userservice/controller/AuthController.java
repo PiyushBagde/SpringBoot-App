@@ -1,5 +1,7 @@
 package com.supermarket.userservice.controller;
 
+import com.supermarket.userservice.dto.LoginRequest;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -15,14 +17,15 @@ public class AuthController {
 	@Autowired
 	private UserService service;
 
+	// TODO: add dto for login
 	@PostMapping("/login")
-	public String login(@RequestBody User user) {
+	public String login(@Valid @RequestBody LoginRequest loginRequest) {
 		System.out.println("** login controller passed");
-		return service.verify(user);
+		return service.verify(loginRequest);
 	}
 	
 	@PostMapping("/register")
-	public User createUser(@RequestBody User user) {
+	public User createUser(@Valid @RequestBody User user) {
 		return service.register(user);
 	}
 }

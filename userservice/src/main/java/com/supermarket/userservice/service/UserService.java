@@ -4,6 +4,7 @@ import com.supermarket.userservice.exception.AuthenticationFailedException;
 import com.supermarket.userservice.exception.OperationFailedException;
 import com.supermarket.userservice.exception.ResourceNotFoundException;
 import com.supermarket.userservice.exception.UserAlreadyExistsException;
+import com.supermarket.userservice.dto.LoginRequest;
 import com.supermarket.userservice.model.Role;
 import com.supermarket.userservice.model.User;
 import com.supermarket.userservice.repository.UserRepository;
@@ -114,7 +115,7 @@ public class UserService {
         return userRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
     }
 
-    public String verify(User user) {
+    public String verify(LoginRequest user) {
         System.out.println("verify is running for email: " + user.getEmail());
 
         Authentication authentication;
