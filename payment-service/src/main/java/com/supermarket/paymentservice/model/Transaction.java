@@ -1,6 +1,10 @@
 package com.supermarket.paymentservice.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PastOrPresent;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -19,34 +23,44 @@ public class Transaction {
     private int transactionId;
 
     @Column(name = "user_id")
+    @Min(value = 1, message = "User ID must be positive")
     private int userId;
 
     @Column(name = "order_id")
+    @Min(value = 1, message = "Order ID must be positive")
     private int orderId;
 
     @Column(name = "required_amount")
+    @PositiveOrZero(message = "Required amount cannot be negative")
     private double requiredAmount;
 
     @Column(name = "received_amount")
+    @PositiveOrZero(message = "Required amount cannot be negative")
     private double receivedAmount;
 
     @Column(name = "balance_amount")
+    @PositiveOrZero(message = "Balance amount cannot be negative")
     private double balanceAmount;
 
     @Enumerated(EnumType.STRING)
     private PaymentMode paymentMode; //Cash, Card, UPI
 
     @Column(name = "payment_status")
+    @PositiveOrZero(message = "Balance amount cannot be negative") // Assuming
     private String paymentStatus;
 
     @Column(name = "payment_time")
+    @NotNull(message = "Payment mode cannot be null")
     private LocalDateTime paymentTime;
 
     private String upiId; // For UPI
+    @PastOrPresent(message = "Payment time cannot be in the future")
     private LocalDateTime transactionTime;
 
-    private String cardNumber; // For Card
-    private String cardHolderName; // Optional
+    @Column(name = "card_number")
+    private String cardNumber;
 
+    @Column(name = "card_holder_name")// For Card
+    private String cardHolderName;
 
 }

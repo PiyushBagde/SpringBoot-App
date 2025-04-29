@@ -57,7 +57,6 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
         return chain.filter(exchange.mutate().request(modifiedRequest).build());
     }
 
-
     private boolean isAuthorized(String path, String role) {
         System.out.println("** In isAuthorized path: " + path + ", role: " + role);
         System.out.println("** isAuthorized activated");
