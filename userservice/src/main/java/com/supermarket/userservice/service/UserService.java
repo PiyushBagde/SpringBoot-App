@@ -1,10 +1,11 @@
 package com.supermarket.userservice.service;
 
+import com.supermarket.userservice.dto.LoginRequest;
+import com.supermarket.userservice.dto.UserResponse;
 import com.supermarket.userservice.exception.AuthenticationFailedException;
 import com.supermarket.userservice.exception.OperationFailedException;
 import com.supermarket.userservice.exception.ResourceNotFoundException;
 import com.supermarket.userservice.exception.UserAlreadyExistsException;
-import com.supermarket.userservice.dto.LoginRequest;
 import com.supermarket.userservice.model.Role;
 import com.supermarket.userservice.model.User;
 import com.supermarket.userservice.repository.UserRepository;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class UserService {
@@ -53,13 +55,16 @@ public class UserService {
         }
     }
 
-    public List<User> getAllUser() {
+    public List<UserResponse> getAllUser() {
         List<User> usersList = userRepository.findAll();
 
         if (usersList.isEmpty()) {
             throw new ResourceNotFoundException("No users found in the database.");
         }
-        return usersList;
+
+        return usersList.stream()
+                .map(user -> new UserResponse(user.getId(), user.getName(), user.getEmail(), user.getRole()
+                )).collect(Collectors.toList());
     }
 
     public String updateUserPassword(int userId, String newPassword) {
@@ -111,8 +116,9 @@ public class UserService {
         }
     }
 
-    public User getUserByUserId(int userId) {
-        return userRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
+    public UserResponse getUserByUserId(int userId) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
+        return new UserResponse(user.getId(), user.getName(), user.getEmail(), user.getRole());
     }
 
     public String verify(LoginRequest user) {

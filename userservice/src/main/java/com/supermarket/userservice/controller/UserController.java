@@ -1,5 +1,6 @@
 package com.supermarket.userservice.controller;
 
+import com.supermarket.userservice.dto.UserResponse;
 import com.supermarket.userservice.model.Role;
 import com.supermarket.userservice.model.User;
 import com.supermarket.userservice.service.UserService;
@@ -33,7 +34,7 @@ public class UserController {
 
     // routes for admin
     @GetMapping("/admin/getAllUsers")
-    public List<User> getAllUsers() {
+    public List<UserResponse> getAllUsers() {
         return service.getAllUser();
     }
 
@@ -45,14 +46,14 @@ public class UserController {
     }
 
     @PutMapping("/admin/updateRole/{id}")
-    public User updateUserRole(@PathVariable @Min(value = 1, message = "User ID must be a positive number") int id,
+    public UserResponse updateUserRole(@PathVariable @Min(value = 1, message = "User ID must be a positive number") int id,
                                @RequestParam @NotNull(message = "New role cannot be null") Role newRole) {
         User user = service.updateUserRole(id, newRole);
-        return user;
+        return new UserResponse(user.getId(), user.getName(), user.getEmail(), user.getRole());
     }
 
     @GetMapping("/admin/getUser/{userId}")
-    public User getUser(
+    public UserResponse getUser(
             @PathVariable @Min(value = 1, message = "User ID must be a positive number") int userId) {
         return service.getUserByUserId(userId);
     }
