@@ -40,16 +40,6 @@ public class LoggingAspect {
     public void logMethodExitSuccess(JoinPoint joinPoint, Object result) {
         String className = joinPoint.getSignature().getDeclaringTypeName();
         String methodName = joinPoint.getSignature().getName();
-
-        String resultStr;
-        if (result instanceof com.supermarket.userservice.model.User) {
-            // Example: Mask password in User object
-            com.supermarket.userservice.model.User user = (com.supermarket.userservice.model.User) result;
-            resultStr =  String.format("User[id=%d, name='%s', email='%s', password='*****', role=%s]",
-                    user.getId(), user.getName(), user.getEmail(), user.getRole());
-            log.info("Exit: {}.{}() with result = [{}]", className, methodName, resultStr);
-            return;
-        }
         log.info("Exit: {}.{}() with result = [{}]", className, methodName, result);
     }
 
