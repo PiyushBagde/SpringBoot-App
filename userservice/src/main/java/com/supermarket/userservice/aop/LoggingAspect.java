@@ -6,12 +6,8 @@ import org.aspectj.lang.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
-import jakarta.servlet.http.HttpServletRequest; // Ensure correct import for Servlet API
+
 import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Aspect
 @Component
@@ -21,12 +17,14 @@ public class LoggingAspect {
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
     @Pointcut("within(com.supermarket.userservice.controller..*)")
-    public void controllerLayer() {}
+    public void controllerLayer() {
+    }
 
     @Pointcut("within(com.supermarket.userservice.service..*)")
-    public void serviceLayer() {}
+    public void serviceLayer() {
+    }
 
-    @Before("controllerLayer() || serviceLayer()")
+    @Before("controllerLayer()")
     public void logMethodEntry(JoinPoint joinPoint) {
         String className = joinPoint.getSignature().getDeclaringTypeName();
         String methodName = joinPoint.getSignature().getName();
@@ -36,7 +34,7 @@ public class LoggingAspect {
     }
 
 
-    @AfterReturning(pointcut = "controllerLayer() || serviceLayer()", returning = "result")
+    @AfterReturning(pointcut = "controllerLayer()", returning = "result")
     public void logMethodExitSuccess(JoinPoint joinPoint, Object result) {
         String className = joinPoint.getSignature().getDeclaringTypeName();
         String methodName = joinPoint.getSignature().getName();
@@ -48,8 +46,7 @@ public class LoggingAspect {
         String className = joinPoint.getSignature().getDeclaringTypeName();
         String methodName = joinPoint.getSignature().getName();
 
-        log.error("Exception in {}.{}() with cause = '{}' and exception = '{}'",
-                className, methodName, exception.getCause(), exception.getMessage());
+        log.error("Exception in {}.{}() | exception = '{}'", className, methodName, exception.getMessage());
     }
 
     @Around("serviceLayer()")
