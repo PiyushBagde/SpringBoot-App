@@ -1,12 +1,11 @@
 package com.supermarket.paymentservice.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-@Data
-@NoArgsConstructor
+@Getter
+@Setter
 @AllArgsConstructor
+@NoArgsConstructor
 public class OrderItemsDto {
     private int productId;
     private String productName;
