@@ -25,7 +25,7 @@ public class CartController {
     public String addToCart(
             @RequestParam @Min(value = 1, message = "User ID must be positive") int userId,
             @RequestParam @NotBlank(message = "Product name cannot be blank") String prodName,
-            @RequestParam @Positive(message = "Quantity must be positive") int quantity) {  // Quantity >= 1
+            @RequestParam @Positive(message = "Quantity must be positive") int quantity) {
         // TODO check when user tries to add same product again
         System.out.println("Adding cart to user " + userId + " product " + prodName);
         cartService.addToCart(userId, prodName, quantity);
