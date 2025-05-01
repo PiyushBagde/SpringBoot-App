@@ -30,8 +30,8 @@ public class ProductService {
         product.setCategory(category);
 
         if (productRepository.findByProdName(product.getProdName()).isPresent()) {
-                 throw new ResourceAlreadyExistsException("Product with name '" + product.getProdName() + "' already exists.");
-             }
+            throw new ResourceAlreadyExistsException("Product with name '" + product.getProdName() + "' already exists.");
+        }
 
         try {
             return productRepository.save(product);
@@ -48,18 +48,18 @@ public class ProductService {
 
     public List<Product> getAllProducts() {
         List<Product> products = productRepository.findAll();
-         if (products.isEmpty()) {
-             throw new ResourceNotFoundException("No products found in the database.");
-         }
+        if (products.isEmpty()) {
+            throw new ResourceNotFoundException("No products found in the database.");
+        }
         return products;
     }
 
     public List<Product> getProductsByCategoryId(int categoryId) {
         Category category = categoryRepository.findById(categoryId).orElseThrow(() -> new ResourceNotFoundException("Cannot get products. Category not found with id: " + categoryId));
         List<Product> products = productRepository.findByCategory(category);
-         if (products.isEmpty()) {
+        if (products.isEmpty()) {
             throw new ResourceNotFoundException("No products found for category id: " + categoryId);
-         }
+        }
         return products;
 
     }
@@ -91,7 +91,7 @@ public class ProductService {
 
         if (updatedproduct.getPrice() < 0) throw new IllegalArgumentException("Price cannot be negative.");
         if (updatedproduct.getStock() < 0) throw new IllegalArgumentException("Stock level cannot be negative.");
-        if(updatedproduct.getProdName() == null) throw new IllegalArgumentException("Product name cannot be null.");
+        if (updatedproduct.getProdName() == null) throw new IllegalArgumentException("Product name cannot be null.");
 
         existingProduct.setProdName(updatedproduct.getProdName());
         existingProduct.setPrice(updatedproduct.getPrice());
@@ -162,6 +162,7 @@ public class ProductService {
         if (productList.isEmpty()) {
             throw new ResourceNotFoundException("No product found for category: " + categoryName);
         }
+
         return productList;
     }
 }

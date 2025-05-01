@@ -73,7 +73,7 @@ public class ProductController {
     }
 
     @GetMapping("/customer/getProductsByCategoryName")
-    public List<Product> getProductsByCategoryName(@RequestParam @NotBlank(message = "Category name cannot be blank") String categoryName) {
+    public List<Product> getProdByCategoryName(@RequestParam @NotBlank(message = "Category name cannot be blank") String categoryName) {
         return productService.getProductsByCategoryName(categoryName);
     }
 
