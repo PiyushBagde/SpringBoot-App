@@ -37,9 +37,8 @@ public class LoggingAspect {
     public void logMethodExitSuccess(JoinPoint joinPoint, Object result) {
         String className = joinPoint.getSignature().getDeclaringTypeName();
         String methodName = joinPoint.getSignature().getName();
-        String resultString = safeObjectToString(result);
 
-        log.info("Exit: {}.{}() with result = [{}]", className, methodName, resultString);
+        log.info("Exit: {}.{}() with result = [{}]", className, methodName, result);
     }
 
     @AfterThrowing(pointcut = "controllerLayer() || serviceLayer()", throwing = "exception")
@@ -61,34 +60,6 @@ public class LoggingAspect {
 
         log.info("Execution time: {}.{}() executed in {} ms", className, methodName, (endTime - startTime));
         return result;
-    }
-
-    private String safeObjectToString(Object obj) {
-        if (obj == null) return "null";
-
-        // Handle Collections/Arrays to avoid huge logs
-        if (obj instanceof java.util.Collection) {
-            String elements = ((java.util.Collection<?>) obj).stream()
-                    .map(this::safeObjectToString) // Recursive call
-                    .limit(5) // Show first 5 items max
-                    .collect(Collectors.joining(", "));
-
-            if (((java.util.Collection<?>) obj).size() > 5) elements += ", ...";
-            return "[" + elements + "] (Size: " + ((java.util.Collection<?>) obj).size() + ")";
-        }
-        if (obj.getClass().isArray()) {
-            String elements = Arrays.stream((Object[]) obj)
-                    .map(this::safeObjectToString)
-                    .limit(5)
-                    .collect(Collectors.joining(", "));
-            if (((Object[]) obj).length > 5) elements += ", ...";
-            return "[" + elements + "] (Size: " + ((Object[]) obj).length + ")";
-        }
-
-        String objStr = obj.toString();
-        // Limit overall length
-        if (objStr.length() > 500) return objStr.substring(0, 497) + "...";
-        return objStr;
     }
 }
 
