@@ -66,5 +66,4 @@ public class CategoryController {
         return categoryService.updateCategoryName(id, newCategoryName);
     }
 
-
 }

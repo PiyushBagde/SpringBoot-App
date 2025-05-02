@@ -121,11 +121,14 @@ public class ProductService {
 
     @Transactional
     public Product updateQuantity(int productId, int newQuantity) {
-        Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new ResourceNotFoundException("Cannot update quantity. Product not found with id: " + productId));
+        if (productId <= 0) {
+            throw new IllegalArgumentException("Product ID must be positive.");
+        }
         if (newQuantity < 0) {
             throw new IllegalArgumentException("Stock quantity cannot be negative.");
         }
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cannot update quantity. Product not found with id: " + productId));
 
         product.setStock(newQuantity);
         try {

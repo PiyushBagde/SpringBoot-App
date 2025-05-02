@@ -22,7 +22,10 @@ public class CategoryService {
 
     @Transactional
     public Category addCategory(Category category) {
-        System.out.println("inside add category");
+        if (category.getCategoryName() == null || category.getCategoryName().isBlank()) {
+            throw new IllegalArgumentException("Category name cannot be empty.");
+        }
+
         if (categoryRepository.findByCategoryName(category.getCategoryName()).isPresent()) {
             System.out.println("existing category found");
             throw new ResourceAlreadyExistsException("Category with name '" + category.getCategoryName() + "' already exists.");
@@ -49,9 +52,9 @@ public class CategoryService {
     public List<Category> getAllCategories() {
         List<Category> categories = categoryRepository.findAll();
         // if list empty
-         if (categories.isEmpty()) {
-             throw new ResourceNotFoundException("No categories found.");
-         }
+        if (categories.isEmpty()) {
+            throw new ResourceNotFoundException("No categories found.");
+        }
         return categories;
     }
 
