@@ -11,8 +11,8 @@
 	<groupId>com.supermarket</groupId>
 	<artifactId>userservice</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>userservice</name>
-	<description>userservice for supermarket</description>
+	<name>user-service</name>
+	<description>user-service for supermarket</description>
 	<url/>
 	<licenses>
 		<license/>
@@ -104,7 +104,6 @@
 	
 		
 		<!-- https://mvnrepository.com/artifact/org.springframework.cloud/spring-cloud-starter-openfeign -->
-		
 		<dependency>
 		    <groupId>org.springframework.cloud</groupId>
 		    <artifactId>spring-cloud-starter-openfeign</artifactId>
