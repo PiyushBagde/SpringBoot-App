@@ -29,15 +29,16 @@ public class TransactionService {
         OrderDto order;
         try {
             order = billingServiceClient.getOrderByOrderId(orderId);
-            if (order == null) {
-                throw new ResourceNotFoundException("Order not found with ID: " + orderId + " (Billing service returned null)");
-            }
         } catch (FeignException.NotFound e) {
             throw new ResourceNotFoundException("Order not found with ID: " + orderId + " in Billing Service.", e);
         } catch (FeignException e) {
             throw new OperationFailedException("Failed to retrieve order details from Billing Service.", e);
         } catch (Exception e) {
             throw new OperationFailedException("An unexpected error occurred while fetching order details.", e);
+        }
+
+        if (order == null) {
+            throw new ResourceNotFoundException("Order not found with ID: " + orderId + " (Billing service returned null)");
         }
 
 
@@ -79,7 +80,7 @@ public class TransactionService {
 
     @Transactional
     public Transaction payByCard(int orderId, double receivedAmount, String cardNumber, String cardHolderName) {
-        if (cardNumber == null || cardHolderName == null || cardHolderName.isBlank()) {
+        if (cardNumber == null || cardNumber.isBlank() || cardHolderName == null || cardHolderName.isBlank()) {
             throw new IllegalArgumentException("Card number and holder name are required");
         }
 
@@ -132,10 +133,7 @@ public class TransactionService {
     }
 
     public List<Transaction> getPaymentsByMode(PaymentMode mode) {
-//        return transactionRepository.findAll()
-//                .stream()
-//                .filter(p -> p.getPaymentMode() == mode)
-//                .collect(Collectors.toList());
+
         try {
             return transactionRepository.findAllByPaymentMode(mode);
         } catch (DataAccessException e) {
