@@ -13,12 +13,12 @@ import com.supermarket.billingservice.dto.CartItemResponse;
 public interface CartServiceClient {
 
 	@GetMapping("/cart/getCartItemsByUserId/{userId}")
-	public List<CartItemResponse> getCartItemsByUserId(@PathVariable int userId);
+	List<CartItemResponse> getCartItemsByUserId(@PathVariable int userId);
 
 	@GetMapping("/cart/getCartIdByUserId/{userId}")
-	public int getCartIdByUserId(@PathVariable int userId);
+	int getCartIdByUserId(@PathVariable int userId);
 
 	@DeleteMapping("/cart/clearCart/{userId}")
-	public String clearCart(@PathVariable int userId);
+	String clearCart(@PathVariable int userId);
 
 }
