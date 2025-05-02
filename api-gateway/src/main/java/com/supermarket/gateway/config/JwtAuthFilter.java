@@ -1,6 +1,6 @@
 package com.supermarket.gateway.config;
 
-import com.supermarket.gateway.config.util.JWTUtil;
+import com.supermarket.gateway.util.JWTUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;

@@ -1,4 +1,4 @@
-package com.supermarket.gateway.config.util;
+package com.supermarket.gateway.util;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
