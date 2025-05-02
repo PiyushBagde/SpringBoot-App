@@ -43,17 +43,20 @@ public class CartService {
 
         try {
             product = inventoryServiceClient.getProductByProdName(prodName);
-            // if available stock
-            if (product.getStock() < quantity) {
-                throw new CartOperationException("Insufficient stock for product '" + prodName + "'. Available: " + product.getStock());
-            }
-        } catch (FeignException.NotFound e) {
+        }
+        catch (FeignException.NotFound e) {
             throw new ResourceNotFoundException("Product '" + prodName + "' not found in inventory.", e);
         } catch (FeignException e) {
             throw new OperationFailedException("Failed to retrieve product details from inventory service.", e);
         } catch (Exception e) {
             // Catch any other unexpected error
             throw new OperationFailedException("An unexpected error occurred while contacting inventory service.", e);
+        }
+
+        // if available stock
+        if (product.getStock() < quantity) {
+            System.out.println("inside stock check");
+            throw new CartOperationException("Insufficient stock for product '" + prodName + "'. Available: " + product.getStock());
         }
 
         int prodId = product.getProdId();
@@ -80,7 +83,7 @@ public class CartService {
 
         CartItems itemToSave;
         double cartTotalChange;
-        if (existingItemOpt.isPresent()) {
+        if (existingItemOpt.isPresent()) { // already existing cartItem
             itemToSave = existingItemOpt.get();
             int newQuantity = itemToSave.getQuantity() + quantity;
             // Check stock for the *additional* quantity

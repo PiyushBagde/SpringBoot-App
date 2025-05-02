@@ -39,7 +39,7 @@ public class LoggingAspect {
     public void logMethodExitSuccess(JoinPoint joinPoint, Object result) {
         String className = joinPoint.getSignature().getDeclaringTypeName();
         String methodName = joinPoint.getSignature().getName();
-        String resultString = result.toString();
+        String resultString = result != null ? safeObjectToString(result) : "null";
 
         log.info("Exit: {}.{}() with result = [{}]", className, methodName, resultString);
     }
